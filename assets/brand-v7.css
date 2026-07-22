@@ -1,0 +1,10 @@
+
+/* v7: Brand media and engagement metrics */
+.traffic-mode-box{display:grid;gap:8px;margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2)}
+.traffic-mode-box[hidden]{display:none!important}.traffic-mode-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.traffic-mode-head strong{font-size:11px}.traffic-mode-box .segmented{width:min(310px,100%)}
+.traffic-derived{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:9px}.traffic-derived[hidden]{display:none}.traffic-derived-item{min-height:60px;padding:9px;border:1px solid var(--line);border-radius:7px;background:#fff}.traffic-derived-item span{display:block;color:var(--muted);font-size:9px}.traffic-derived-item strong{display:block;margin-top:5px;font-size:13px}
+.validation-summary{margin-top:14px;padding:11px 12px;border:1px solid #efbcbc;border-left:4px solid var(--negative);border-radius:7px;background:var(--negative-soft);color:#7e2424;font-size:10.5px;line-height:1.45}.validation-summary[hidden]{display:none}.validation-summary strong{display:block;margin-bottom:4px;color:var(--negative)}.validation-summary p{margin:2px 0}
+.quick-result{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 2px;padding:9px;border:1px solid var(--line-dark);border-radius:8px;background:#fff}.quick-result[hidden]{display:none!important}.quick-result-item{min-width:0;padding:8px 9px;border-radius:6px;background:var(--surface-2)}.quick-result-item span{display:block;color:var(--muted);font-size:9px}.quick-result-item strong{display:block;margin-top:4px;overflow:hidden;font-size:14px;text-overflow:ellipsis;white-space:nowrap}
+.stage-rate-wrap.invalid{border-color:var(--negative);box-shadow:0 0 0 1px var(--negative)}
+@media(max-width:760px){.traffic-derived{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.traffic-mode-head{display:grid}.traffic-mode-box .segmented{width:100%}.quick-result{display:grid}}
