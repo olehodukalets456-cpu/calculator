@@ -1,0 +1,1562 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="UA/EN калькулятор дохідності медіабаїнгу для eCommerce, Lead Generation, EdTech та SaaS.">
+  <title>Buying Profitability Calculator</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6f7;
+      --surface: #ffffff;
+      --surface-2: #fafafa;
+      --text: #17191c;
+      --muted: #6c727f;
+      --line: #dfe2e7;
+      --line-dark: #c8cdd5;
+      --accent: #2457d6;
+      --accent-soft: #eef3ff;
+      --positive: #147a45;
+      --positive-soft: #ecf8f1;
+      --negative: #bd2c2c;
+      --negative-soft: #fff0f0;
+      --warning: #956000;
+      --warning-soft: #fff8e6;
+      --radius: 10px;
+      --radius-sm: 7px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button { margin: 0; }
+
+    .topbar {
+      position: sticky;
+      z-index: 30;
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 64px;
+      padding: 11px clamp(16px, 4vw, 54px);
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(10px);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; }
+    .brand-mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border: 1px solid #111;
+      border-radius: 8px;
+      background: #111;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: -.04em;
+    }
+    .brand-copy { display: grid; }
+    .brand-copy strong { font-size: 14px; }
+    .brand-copy small { color: var(--muted); font-size: 11px; }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .currency-select,
+    .language-switch {
+      border: 1px solid var(--line-dark);
+      border-radius: 8px;
+      background: #fff;
+    }
+    .currency-select { padding: 8px 27px 8px 9px; color: var(--text); font-size: 12px; }
+    .language-switch { display: flex; padding: 2px; }
+    .language-switch button {
+      min-width: 38px;
+      padding: 6px 8px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .language-switch button.active { background: #17191c; color: #fff; }
+
+    .page {
+      width: min(1380px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 34px 0 54px;
+    }
+    .intro {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 25px;
+    }
+    .intro h1 {
+      margin: 0;
+      font-size: clamp(29px, 4vw, 46px);
+      line-height: 1.05;
+      letter-spacing: -.045em;
+    }
+    .intro p {
+      max-width: 720px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .status {
+      min-width: 190px;
+      padding: 11px 13px;
+      border: 1px solid var(--line-dark);
+      border-left: 4px solid var(--warning);
+      border-radius: var(--radius-sm);
+      background: #fff;
+    }
+    .status small { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+    .status strong { display: block; margin-top: 2px; font-size: 13px; }
+    .status.positive { border-left-color: var(--positive); }
+    .status.negative { border-left-color: var(--negative); }
+    .status.warning { border-left-color: var(--warning); }
+
+    .vertical-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .vertical-tab {
+      min-height: 76px;
+      padding: 13px 14px;
+      border: 1px solid var(--line-dark);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      color: var(--text);
+      text-align: left;
+    }
+    .vertical-tab:hover { border-color: #868e9a; }
+    .vertical-tab.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+    .vertical-tab strong,
+    .vertical-tab span { display: block; }
+    .vertical-tab strong { font-size: 14px; }
+    .vertical-tab span { margin-top: 4px; color: var(--muted); font-size: 10.5px; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(390px, .9fr) minmax(540px, 1.1fr);
+      align-items: start;
+      gap: 16px;
+    }
+    .panel,
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .inputs-panel { position: sticky; top: 80px; padding: 20px; }
+    .results-column { display: grid; gap: 12px; }
+
+    .panel-heading,
+    .card-head,
+    .result-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .panel-heading { margin-bottom: 18px; }
+    .panel-heading h2,
+    .result-head h2,
+    .card-head h3 { margin: 0; letter-spacing: -.025em; }
+    .panel-heading h2,
+    .result-head h2 { font-size: 19px; }
+    .card-head h3 { font-size: 15px; }
+    .card-head p { margin: 3px 0 0; color: var(--muted); font-size: 10.5px; }
+    .text-button {
+      padding: 5px 0;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .text-button:hover { color: var(--negative); }
+
+    .input-section { margin-top: 22px; }
+    .input-section:first-of-type { margin-top: 0; }
+    .input-section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 9px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid var(--line);
+    }
+    .input-section-header strong { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    .input-section-header span { color: var(--muted); font-size: 10px; }
+
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .field {
+      display: block;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+    }
+    .field.full { grid-column: 1 / -1; }
+    .field:focus-within { border-color: var(--accent); }
+    .field.invalid { border-color: var(--negative); }
+    .field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .field-label { font-size: 11px; font-weight: 750; }
+    .optional { color: var(--muted); font-size: 9px; }
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      min-height: 38px;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .input-wrap input {
+      width: 100%;
+      min-width: 0;
+      padding: 8px 3px;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .prefix,
+    .suffix { padding: 0 9px; color: var(--muted); font-size: 11px; }
+    .prefix:empty,
+    .suffix:empty { display: none; }
+    .field-help { display: block; margin-top: 5px; color: var(--muted); font-size: 9.5px; line-height: 1.35; }
+    .field-error { display: none; margin-top: 5px; color: var(--negative); font-size: 9px; font-weight: 700; }
+    .field.invalid .field-error { display: block; }
+
+    .funnel-editor { display: grid; gap: 7px; }
+    .stage-row {
+      display: grid;
+      grid-template-columns: minmax(72px,.72fr) minmax(130px,1.45fr) minmax(86px,.66fr) 32px;
+      align-items: center;
+      gap: 7px;
+    }
+    .stage-source {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 10px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .stage-name,
+    .stage-rate {
+      width: 100%;
+      min-width: 0;
+      height: 38px;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+    }
+    .stage-name { padding: 8px 9px; font-size: 11px; font-weight: 700; }
+    .stage-name:focus,
+    .stage-rate-wrap:focus-within { border-color: var(--accent); }
+    .stage-rate-wrap {
+      display: flex;
+      align-items: center;
+      height: 38px;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .stage-rate { height: 36px; padding: 8px 2px 8px 9px; border: 0; font-size: 12px; font-weight: 750; }
+    .stage-rate-wrap span { padding: 0 8px 0 3px; color: var(--muted); font-size: 10px; }
+    .delete-stage {
+      display: grid;
+      width: 32px;
+      height: 32px;
+      place-items: center;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1;
+    }
+    .delete-stage:hover:not(:disabled) { border-color: #e1a6a6; background: var(--negative-soft); color: var(--negative); }
+    .add-stage {
+      width: 100%;
+      margin-top: 8px;
+      padding: 9px 12px;
+      border: 1px dashed #aeb5c0;
+      border-radius: 7px;
+      background: #fff;
+      color: #3d4653;
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .add-stage:hover { border-color: var(--accent); color: var(--accent); }
+
+    .basis-box { margin-top: 15px; padding: 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+    .basis-box > strong { display: block; margin-bottom: 7px; font-size: 11px; }
+    .segmented { display: grid; grid-template-columns: repeat(2,1fr); gap: 4px; padding: 3px; border: 1px solid var(--line-dark); border-radius: 7px; background: #fff; }
+    .segmented button { padding: 7px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font-size: 10.5px; font-weight: 750; }
+    .segmented button.active { background: #17191c; color: #fff; }
+    .basis-hint { margin: 7px 1px 0; color: var(--muted); font-size: 9.5px; }
+
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 18px; }
+    .action-button {
+      min-height: 40px;
+      padding: 9px;
+      border: 1px solid var(--line-dark);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--text);
+      font-size: 10.5px;
+      font-weight: 750;
+    }
+    .action-button:hover { border-color: #7c8592; }
+    .action-message { min-height: 16px; margin: 6px 0 0; color: var(--positive); text-align: center; font-size: 10px; }
+
+    .summary-card { padding: 20px; }
+    .result-basis { color: var(--muted); font-size: 10px; font-weight: 700; }
+    .hero-result {
+      display: grid;
+      grid-template-columns: 1.4fr .8fr;
+      gap: 1px;
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--line);
+      overflow: hidden;
+    }
+    .hero-result > div { padding: 15px; background: #fff; }
+    .hero-result small { display: block; color: var(--muted); font-size: 10px; }
+    .hero-result strong { display: block; margin-top: 4px; }
+    .profit-value { font-size: clamp(26px,4vw,38px); letter-spacing: -.05em; }
+    .hero-result-side strong { font-size: 23px; }
+    .hero-result.positive { border-color: #afd8bf; background: #afd8bf; }
+    .hero-result.positive > div { background: var(--positive-soft); }
+    .hero-result.negative { border-color: #edb8b8; background: #edb8b8; }
+    .hero-result.negative > div { background: var(--negative-soft); }
+    .hero-result.warning { border-color: #ead399; background: #ead399; }
+    .hero-result.warning > div { background: var(--warning-soft); }
+
+    .key-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px; margin-top: 10px; }
+    .metric-card { min-height: 92px; padding: 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; }
+    .metric-label,
+    .metric-help { display: block; color: var(--muted); font-size: 9.5px; }
+    .metric-value { display: block; margin: 7px 0 4px; font-size: 17px; letter-spacing: -.025em; }
+    .metric-card.positive { border-color: #b9dec7; }
+    .metric-card.negative { border-color: #efbcbc; }
+
+    .insight { display: grid; grid-template-columns: 24px 1fr; gap: 9px; margin-top: 12px; padding: 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+    .insight-icon { display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; background: #17191c; color: #fff; font-size: 10px; font-weight: 800; }
+    .insight strong { font-size: 10.5px; }
+    .insight p { margin: 3px 0 0; color: var(--muted); font-size: 10.5px; }
+
+    .card { padding: 17px; }
+    .compare-grid,
+    .advanced-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; margin-top: 12px; }
+    .compare-item,
+    .advanced-item { min-height: 67px; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+    .compare-item span,
+    .advanced-item span { display: block; color: var(--muted); font-size: 9.5px; }
+    .compare-item strong,
+    .advanced-item strong { display: block; margin-top: 6px; font-size: 14px; }
+    .compare-item.positive { border-color: #b9dec7; background: var(--positive-soft); }
+    .compare-item.negative { border-color: #efbcbc; background: var(--negative-soft); }
+
+    .funnel { display: grid; gap: 8px; margin-top: 12px; }
+    .funnel-row { display: grid; grid-template-columns: minmax(100px,1fr) minmax(160px,3fr) minmax(70px,.7fr); align-items: center; gap: 10px; }
+    .funnel-label { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .funnel-track { height: 7px; border-radius: 2px; background: #e9ebee; overflow: hidden; }
+    .funnel-fill { display: block; height: 100%; background: var(--accent); transition: width .2s ease; }
+    .funnel-value { text-align: right; font-size: 11px; }
+
+    .funnel-dashboard {
+      margin-top: 16px;
+      padding: 20px;
+    }
+    .dashboard-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--line);
+    }
+    .dashboard-head h2 {
+      margin: 0;
+      font-size: 19px;
+      letter-spacing: -.025em;
+    }
+    .dashboard-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 10.5px;
+    }
+    .download-report {
+      flex: 0 0 auto;
+      min-height: 38px;
+      padding: 9px 13px;
+      border: 1px solid #17191c;
+      border-radius: 7px;
+      background: #17191c;
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 800;
+    }
+    .download-report:hover { background: #30343a; }
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+      gap: 22px;
+      margin-top: 18px;
+    }
+    .dashboard-funnel {
+      display: grid;
+      align-content: start;
+      gap: 6px;
+      min-width: 0;
+    }
+    .dashboard-stage {
+      width: var(--stage-width, 100%);
+      margin-inline: auto;
+      padding: 11px 13px;
+      border: 1px solid var(--line-dark);
+      background: var(--surface-2);
+    }
+    .dashboard-stage:first-child { border-radius: 8px 8px 3px 3px; }
+    .dashboard-stage:last-child { border-radius: 3px 3px 8px 8px; }
+    .dashboard-stage-main,
+    .dashboard-stage-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .dashboard-stage-main strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .dashboard-stage-main span { flex: 0 0 auto; font-size: 15px; font-weight: 850; }
+    .dashboard-stage-meta { margin-top: 4px; color: var(--muted); font-size: 9.5px; }
+    .dashboard-stage-meta .drop { color: var(--negative); }
+    .dashboard-aside { display: grid; align-content: start; gap: 10px; }
+    .dashboard-stats { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; }
+    .dashboard-stat {
+      min-height: 70px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: #fff;
+    }
+    .dashboard-stat span { display: block; color: var(--muted); font-size: 9.5px; }
+    .dashboard-stat strong { display: block; margin-top: 6px; font-size: 14px; }
+    .recommendation-box {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+    }
+    .recommendation-box > strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .recommendations { display: grid; gap: 7px; }
+    .recommendation {
+      position: relative;
+      margin: 0;
+      padding-left: 13px;
+      color: #3d434c;
+      font-size: 10.5px;
+      line-height: 1.4;
+    }
+    .recommendation::before {
+      position: absolute;
+      top: .55em;
+      left: 0;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #17191c;
+      content: '';
+    }
+
+    .footer-note { margin-top: 14px; color: var(--muted); font-size: 10px; }
+    .footer-note strong { color: var(--text); }
+
+    @media (max-width: 1040px) {
+      .workspace { grid-template-columns: 1fr; }
+      .inputs-panel { position: static; }
+      .dashboard-layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .page { width: min(100% - 22px, 1380px); padding-top: 24px; }
+      .topbar { padding-inline: 11px; }
+      .brand-copy small { display: none; }
+      .intro { display: grid; }
+      .status { width: 100%; }
+      .vertical-tabs { grid-template-columns: repeat(2,1fr); }
+      .key-grid { grid-template-columns: repeat(2,1fr); }
+      .compare-grid,
+      .advanced-grid { grid-template-columns: repeat(2,1fr); }
+      .stage-row { grid-template-columns: minmax(65px,.7fr) minmax(100px,1.2fr) 82px 32px; }
+    }
+    @media (max-width: 520px) {
+      .fields { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .vertical-tab { min-height: 70px; }
+      .stage-row { grid-template-columns: 1fr 88px 32px; }
+      .stage-source { grid-column: 1 / -1; }
+      .hero-result { grid-template-columns: 1fr; }
+      .key-grid,
+      .compare-grid,
+      .advanced-grid { grid-template-columns: 1fr 1fr; }
+      .funnel-row { grid-template-columns: 84px 1fr 58px; gap: 7px; }
+      .actions { grid-template-columns: 1fr; }
+      .dashboard-head { display: grid; }
+      .download-report { width: 100%; }
+      .dashboard-stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">BP</div>
+      <div class="brand-copy">
+        <strong>Buying Profitability</strong>
+        <small data-i18n="brandSubtitle">Калькулятор дохідності баїнгу</small>
+      </div>
+    </div>
+    <div class="top-actions">
+      <select id="currency" class="currency-select" aria-label="Currency">
+        <option value="USD">USD</option>
+        <option value="EUR">EUR</option>
+        <option value="UAH">UAH</option>
+        <option value="GBP">GBP</option>
+      </select>
+      <div class="language-switch" aria-label="Language">
+        <button type="button" data-lang="uk" class="active">UA</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="intro">
+      <div>
+        <h1 data-i18n="heroTitle">Калькулятор дохідності баїнгу</h1>
+        <p data-i18n="heroText">Введи бюджет, CPC, конверсії воронки та цінність клієнта. Нижче одразу побачиш дохід, прибуток, ROI та беззбиткові ліміти.</p>
+      </div>
+      <div id="statusBox" class="status warning">
+        <small data-i18n="status">Статус</small>
+        <strong id="statusText">—</strong>
+      </div>
+    </section>
+
+    <div id="verticalTabs" class="vertical-tabs"></div>
+
+    <div class="workspace">
+      <section class="panel inputs-panel">
+        <div class="panel-heading">
+          <h2 data-i18n="inputTitle">Вхідні дані</h2>
+          <button id="reset" class="text-button" type="button" data-i18n="reset">Скинути</button>
+        </div>
+
+        <div class="input-section">
+          <div class="input-section-header">
+            <strong data-i18n="trafficData">Трафік</strong>
+            <span data-i18n="trafficHint">Бюджет і CPC</span>
+          </div>
+          <div id="trafficFields" class="fields"></div>
+        </div>
+
+        <div class="input-section">
+          <div class="input-section-header">
+            <strong data-i18n="funnelData">Воронка</strong>
+            <span data-i18n="funnelInputHint">Кожен % рахується від попереднього етапу</span>
+          </div>
+          <div id="funnelEditor" class="funnel-editor"></div>
+          <button id="addStage" class="add-stage" type="button" data-i18n="addStage">+ Додати етап</button>
+        </div>
+
+        <div class="input-section">
+          <div class="input-section-header">
+            <strong data-i18n="moneyData">Економіка</strong>
+            <span data-i18n="moneyHint">Дохід і маржа</span>
+          </div>
+          <div id="moneyFields" class="fields"></div>
+        </div>
+
+        <div id="basisBox" class="basis-box" hidden>
+          <strong data-i18n="calculationBasis">На якій базі рахувати результат</strong>
+          <div id="basisMode" class="segmented"></div>
+          <p id="basisHint" class="basis-hint"></p>
+        </div>
+
+        <div class="actions">
+          <button id="copy" class="action-button" type="button" data-i18n="copySummary">Копіювати підсумок</button>
+          <button id="share" class="action-button" type="button" data-i18n="copyLink">Копіювати сценарій</button>
+        </div>
+        <p id="actionMessage" class="action-message"></p>
+      </section>
+
+      <section class="results-column">
+        <section class="panel summary-card">
+          <div class="result-head">
+            <h2 data-i18n="buyingResult">Результат баїнгу</h2>
+            <span id="resultBasis" class="result-basis">—</span>
+          </div>
+
+          <div id="heroResult" class="hero-result warning">
+            <div>
+              <small data-i18n="netProfit">Чистий прибуток</small>
+              <strong id="profitValue" class="profit-value">—</strong>
+            </div>
+            <div class="hero-result-side">
+              <small>ROI</small>
+              <strong id="roiValue">—</strong>
+            </div>
+          </div>
+
+          <div id="keyMetrics" class="key-grid"></div>
+
+          <div class="insight">
+            <span class="insight-icon">i</span>
+            <div>
+              <strong data-i18n="whatItMeans">Що це означає</strong>
+              <p id="insightText">—</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div><h3 data-i18n="buyingLimits">Беззбиткові ліміти</h3><p data-i18n="limitsHint">Інші витрати вже враховані</p></div>
+          </div>
+          <div id="compareGrid" class="compare-grid"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div><h3 data-i18n="funnelForecast">Прогноз воронки</h3><p data-i18n="funnelForecastHint">Результат за введеним бюджетом</p></div>
+          </div>
+          <div id="funnel" class="funnel"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div><h3 data-i18n="moreMetrics">Додаткові метрики</h3><p data-i18n="moreMetricsHint">Для перевірки моделі</p></div>
+          </div>
+          <div id="advancedGrid" class="advanced-grid"></div>
+        </section>
+      </section>
+    </div>
+
+    <section id="funnelDashboard" class="card funnel-dashboard">
+      <div class="dashboard-head">
+        <div>
+          <h2 data-i18n="dashboardTitle">Дашборд воронки</h2>
+          <p data-i18n="dashboardHint">Етапи, просідання та короткі висновки за поточним сценарієм</p>
+        </div>
+        <button id="downloadReport" class="download-report" type="button" data-i18n="downloadReport">Завантажити PDF</button>
+      </div>
+      <div class="dashboard-layout">
+        <div id="dashboardFunnel" class="dashboard-funnel"></div>
+        <aside class="dashboard-aside">
+          <div id="dashboardStats" class="dashboard-stats"></div>
+          <div class="recommendation-box">
+            <strong data-i18n="recommendationsTitle">Рекомендації</strong>
+            <div id="recommendations" class="recommendations"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      <strong data-i18n="important">Важливо:</strong>
+      <span data-i18n="disclaimer"> це прогноз на основі введених даних. Повернення, апрув, холди, податки та комісії треба враховувати в маржі або інших витратах.</span>
+    </div>
+  </main>
+
+  <template id="fieldTemplate">
+    <label class="field">
+      <span class="field-head"><span class="field-label"></span><span class="optional"></span></span>
+      <span class="input-wrap"><span class="prefix"></span><input type="number" inputmode="decimal" step="any"><span class="suffix"></span></span>
+      <span class="field-help"></span>
+      <span class="field-error"></span>
+    </label>
+  </template>
+
+<script>
+'use strict';
+
+const STORAGE_KEY = 'buying-profitability-calculator-v4';
+const HASH_KEY = 'scenario';
+
+const I18N = {
+  uk: {
+    brandSubtitle: 'Калькулятор дохідності баїнгу',
+    heroTitle: 'Калькулятор дохідності баїнгу',
+    heroText: 'Введи бюджет, CPC, конверсії воронки та цінність клієнта. Нижче одразу побачиш дохід, прибуток, ROI та беззбиткові ліміти.',
+    status: 'Статус', inputTitle: 'Вхідні дані', reset: 'Скинути',
+    trafficData: 'Трафік', trafficHint: 'Бюджет і CPC', funnelData: 'Воронка', funnelInputHint: 'Кожен % рахується від попереднього етапу', moneyData: 'Економіка', moneyHint: 'Дохід і маржа',
+    addStage: '+ Додати етап', newStage: 'Новий етап', clicksSource: 'Кліки →', deleteStage: 'Видалити етап',
+    calculationBasis: 'На якій базі рахувати результат', firstOrder: 'Перша оплата', lifetime: 'Повний LTV', firstMonth: 'Перший місяць',
+    ecomBasisHint: 'Перша оплата — окупність першого замовлення. LTV — весь дохід від клієнта.',
+    saasBasisHint: 'Перший місяць — моментальна окупність. LTV — економіка за весь lifetime клієнта.',
+    copySummary: 'Копіювати підсумок', copyLink: 'Копіювати сценарій', copied: 'Підсумок скопійовано.', linkCopied: 'Посилання скопійовано.', copyError: 'Не вдалося скопіювати.',
+    buyingResult: 'Результат баїнгу', netProfit: 'Чистий прибуток', whatItMeans: 'Що це означає', buyingLimits: 'Беззбиткові ліміти', limitsHint: 'Інші витрати вже враховані',
+    funnelForecast: 'Прогноз воронки', funnelForecastHint: 'Результат за введеним бюджетом', moreMetrics: 'Додаткові метрики', moreMetricsHint: 'Для перевірки моделі', important: 'Важливо:',
+    disclaimer: ' це прогноз на основі введених даних. Повернення, апрув, холди, податки та комісії треба враховувати в маржі або інших витратах.',
+    profitable: 'Математика в плюсі', nearLimit: 'Плюс є, але запас малий', loss: 'Кампанія збиткова', invalid: 'Перевір вхідні дані',
+    ecomTitle: 'eCommerce', ecomDesc: 'Покупки та повторний дохід', leadgenTitle: 'Lead Generation', leadgenDesc: 'Ліди, кваліфікація та продаж',
+    edtechTitle: 'EdTech', edtechDesc: 'Ліди, дзвінки та оплати', saasTitle: 'SaaS', saasDesc: 'Signup, paid та LTV',
+    adSpend: 'Рекламний бюджет', adSpendHelp: 'Фактичний або плановий spend за період.', cpc: 'CPC', cpcHelp: 'Середня вартість одного рекламного кліку.', fixedCosts: 'Інші витрати', fixedCostsHelp: 'Fee, команда, продакшн, сервіси та інші витрати за період.',
+    aov: 'Середній чек', aovHelp: 'Середня виручка з першої покупки.', customerLtv: 'Дохід з клієнта за LTV', customerLtvHelp: 'Весь дохід із першої та повторних покупок.',
+    valuePerSale: 'Дохід / payout з продажу', valuePerSaleHelp: 'Фактична виручка або виплата за одного клієнта.', studentValue: 'Дохід з одного студента', studentValueHelp: 'Фактично отримана виручка з однієї оплати.',
+    monthlyArpu: 'Місячний ARPU', monthlyArpuHelp: 'Середній місячний дохід з одного paid-клієнта.', lifetimeMonths: 'Lifetime, місяців', lifetimeMonthsHelp: 'Скільки місяців клієнт залишається платним.',
+    margin: 'Валова маржа', marginHelp: 'Частка доходу після собівартості. Для чистого payout постав 100%.', optional: 'необов’язково',
+    errorPositive: 'Введи число більше нуля', errorNonNegative: 'Не може бути менше нуля', errorPercent: 'Введи від 0 до 100%',
+    clicks: 'Кліки', finalResult: 'Фінальний результат', revenue: 'Дохід', revenueHelp: 'Виручка за обраною базою.', salesMetric: 'Фінальних конверсій', salesMetricHelp: 'Кількість користувачів на останньому етапі.',
+    cpa: 'CPA / CAC', cpaHelp: 'Рекламний бюджет ÷ фінальні конверсії.', roas: 'ROAS', roasHelp: 'Дохід ÷ рекламний бюджет.',
+    currentCpa: 'Поточний CPA/CAC', maxCpa: 'CPA/CAC у нуль', currentCpc: 'Поточний CPC', maxCpc: 'CPC у нуль', safety: 'Запас до межі', requiredCvr: 'Потрібна загальна CR',
+    totalCosts: 'Всі витрати', allInCpa: 'All-in CPA/CAC', overallCvr: 'Загальна CR', grossProfit: 'Валовий прибуток', breakEvenSales: 'Конверсій у нуль', breakEvenRoas: 'ROAS у нуль',
+    firstStageCost: 'Ціна першого етапу', secondStageCost: 'Ціна другого етапу', mrr: 'Новий MRR', grossLtv: 'Gross profit LTV', ltvCac: 'LTV:CAC', payback: 'Payback', months: 'міс.',
+    basisFirstOrder: 'Перша оплата', basisLifetime: 'Повний LTV', basisFirstMonth: 'Перший місяць',
+    insightStrong: 'Поточний CPA нижчий за беззбитковий на {gap}. Є запас для масштабування.',
+    insightThin: 'Кампанія в плюсі, але запас лише {gap}. Невелике зростання CPC або просідання CR з’їсть прибуток.',
+    insightLoss: 'Для виходу в нуль треба знизити CPA приблизно на {delta} або підняти загальну CR до {cvr}.',
+    insightNoSales: 'За цих конверсій фінальний результат майже нульовий. Перевір значення у воронці.',
+    dashboardTitle: 'Дашборд воронки', dashboardHint: 'Етапи, просідання та короткі висновки за поточним сценарієм', downloadReport: 'Завантажити PDF', reportGenerating: 'Формую PDF…', reportDownloaded: 'PDF завантажено.', reportError: 'Не вдалося сформувати PDF.',
+    recommendationsTitle: 'Рекомендації', stageConversion: 'CR етапу', stageDrop: 'Втрата', weakestStage: 'Найбільше просідання', finalConversion: 'Фінальна CR', costPerFinal: 'Ціна фінального результату',
+    recommendationWeak: 'Найбільше просідання — між «{from}» та «{to}»: проходить {rate} користувачів.',
+    recommendationLoss: 'Для виходу в нуль потрібен CPA не вище {cpa} або загальна CR не нижче {cvr}.',
+    recommendationThin: 'Запас до беззбиткового CPA — лише {gap}. Перед масштабуванням краще підняти CR або знизити CPC.',
+    recommendationScale: 'Запас до беззбиткового CPA — {gap}. Бюджет можна підвищувати поступово, контролюючи CPC та конверсії.',
+    recommendationCosts: 'Інші витрати займають {share} усіх витрат. Вони помітно впливають на беззбитковий CPA.',
+    reportTitle: 'Звіт з дохідності баїнгу', reportGenerated: 'Сформовано', reportInputs: 'Вхідні дані', reportResults: 'Результати', reportFunnel: 'Воронка', reportPrint: 'Друк / Зберегти PDF', reportStage: 'Етап', reportCount: 'Кількість', reportConversion: 'CR від попереднього етапу', reportNote: 'Звіт сформовано на основі введених у калькулятор даних.',
+    noLimit: '—'
+  },
+  en: {
+    brandSubtitle: 'Buying profitability calculator',
+    heroTitle: 'Buying profitability calculator',
+    heroText: 'Enter ad spend, CPC, funnel conversion rates, and customer value. The calculator immediately shows revenue, profit, ROI, and break-even limits.',
+    status: 'Status', inputTitle: 'Inputs', reset: 'Reset',
+    trafficData: 'Traffic', trafficHint: 'Ad spend and CPC', funnelData: 'Funnel', funnelInputHint: 'Each rate is calculated from the previous stage', moneyData: 'Economics', moneyHint: 'Revenue and margin',
+    addStage: '+ Add stage', newStage: 'New stage', clicksSource: 'Clicks →', deleteStage: 'Delete stage',
+    calculationBasis: 'Profit calculation basis', firstOrder: 'First payment', lifetime: 'Full LTV', firstMonth: 'First month',
+    ecomBasisHint: 'First payment shows first-order payback. LTV includes the full customer revenue.',
+    saasBasisHint: 'First month shows immediate payback. LTV shows economics over the full customer lifetime.',
+    copySummary: 'Copy summary', copyLink: 'Copy scenario', copied: 'Summary copied.', linkCopied: 'Scenario link copied.', copyError: 'Could not copy.',
+    buyingResult: 'Buying result', netProfit: 'Net profit', whatItMeans: 'What this means', buyingLimits: 'Break-even limits', limitsHint: 'Other costs are included',
+    funnelForecast: 'Funnel forecast', funnelForecastHint: 'Result for the entered budget', moreMetrics: 'More metrics', moreMetricsHint: 'For model checks', important: 'Important:',
+    disclaimer: ' this is a forecast based on your inputs. Refunds, approvals, holds, taxes, and fees should be included in margin or other costs.',
+    profitable: 'Economics are profitable', nearLimit: 'Profitable, but buffer is thin', loss: 'Campaign is losing money', invalid: 'Check the inputs',
+    ecomTitle: 'eCommerce', ecomDesc: 'Purchases and repeat revenue', leadgenTitle: 'Lead Generation', leadgenDesc: 'Leads, qualification, and sales',
+    edtechTitle: 'EdTech', edtechDesc: 'Leads, calls, and payments', saasTitle: 'SaaS', saasDesc: 'Signup, paid, and LTV',
+    adSpend: 'Ad spend', adSpendHelp: 'Actual or planned media spend for the period.', cpc: 'CPC', cpcHelp: 'Average cost per outbound ad click.', fixedCosts: 'Other costs', fixedCostsHelp: 'Fees, team, production, tools, and other period costs.',
+    aov: 'Average order value', aovHelp: 'Average revenue from the first purchase.', customerLtv: 'Customer revenue over LTV', customerLtvHelp: 'Total revenue from first and repeat purchases.',
+    valuePerSale: 'Revenue / payout per sale', valuePerSaleHelp: 'Actual revenue or payout from one customer.', studentValue: 'Revenue per student', studentValueHelp: 'Actual collected revenue from one payment.',
+    monthlyArpu: 'Monthly ARPU', monthlyArpuHelp: 'Average monthly revenue per paid customer.', lifetimeMonths: 'Lifetime, months', lifetimeMonthsHelp: 'How many months a customer stays paid.',
+    margin: 'Gross margin', marginHelp: 'Revenue share left after delivery costs. Use 100% for pure payouts.', optional: 'optional',
+    errorPositive: 'Enter a number above zero', errorNonNegative: 'Cannot be below zero', errorPercent: 'Enter 0 to 100%',
+    clicks: 'Clicks', finalResult: 'Final result', revenue: 'Revenue', revenueHelp: 'Revenue under the selected basis.', salesMetric: 'Final conversions', salesMetricHelp: 'Users reaching the last funnel stage.',
+    cpa: 'CPA / CAC', cpaHelp: 'Ad spend ÷ final conversions.', roas: 'ROAS', roasHelp: 'Revenue ÷ ad spend.',
+    currentCpa: 'Current CPA/CAC', maxCpa: 'Break-even CPA/CAC', currentCpc: 'Current CPC', maxCpc: 'Break-even CPC', safety: 'Buffer to limit', requiredCvr: 'Required overall CR',
+    totalCosts: 'Total costs', allInCpa: 'All-in CPA/CAC', overallCvr: 'Overall conversion', grossProfit: 'Gross profit', breakEvenSales: 'Conversions to break even', breakEvenRoas: 'Break-even ROAS',
+    firstStageCost: 'First-stage cost', secondStageCost: 'Second-stage cost', mrr: 'New MRR', grossLtv: 'Gross profit LTV', ltvCac: 'LTV:CAC', payback: 'Payback', months: 'mo',
+    basisFirstOrder: 'First payment', basisLifetime: 'Full LTV', basisFirstMonth: 'First month',
+    insightStrong: 'Current CPA is {gap} below break-even. There is room to scale.',
+    insightThin: 'The campaign is profitable, but the buffer is only {gap}. A small CPC increase or CR drop can erase the profit.',
+    insightLoss: 'To break even, reduce CPA by about {delta} or increase the overall conversion rate to {cvr}.',
+    insightNoSales: 'The current funnel produces almost no final conversions. Recheck the funnel values.',
+    dashboardTitle: 'Funnel dashboard', dashboardHint: 'Stages, drop-offs, and short conclusions for the current scenario', downloadReport: 'Download PDF', reportGenerating: 'Generating PDF…', reportDownloaded: 'PDF downloaded.', reportError: 'Could not generate the PDF.',
+    recommendationsTitle: 'Recommendations', stageConversion: 'Stage CR', stageDrop: 'Drop-off', weakestStage: 'Largest drop-off', finalConversion: 'Final conversion', costPerFinal: 'Cost per final result',
+    recommendationWeak: 'The largest drop is between “{from}” and “{to}”: {rate} of users continue.',
+    recommendationLoss: 'To break even, keep CPA at or below {cpa}, or increase overall conversion to at least {cvr}.',
+    recommendationThin: 'The break-even CPA buffer is only {gap}. Improve conversion or reduce CPC before scaling.',
+    recommendationScale: 'The break-even CPA buffer is {gap}. Increase budget gradually while monitoring CPC and conversion rates.',
+    recommendationCosts: 'Other costs account for {share} of total costs and materially reduce the break-even CPA.',
+    reportTitle: 'Buying profitability report', reportGenerated: 'Generated', reportInputs: 'Inputs', reportResults: 'Results', reportFunnel: 'Funnel', reportPrint: 'Print / Save PDF', reportStage: 'Stage', reportCount: 'Count', reportConversion: 'CR from previous stage', reportNote: 'This report is based on the values entered in the calculator.',
+    noLimit: '—'
+  }
+};
+
+const f = (id, label, help, type='number', required=true) => ({id,label,help,type,required});
+
+const VERTICALS = {
+  ecom: {
+    title: 'ecomTitle', desc: 'ecomDesc', basis: true, defaultBasis: 'first',
+    money: [f('aov','aov','aovHelp','money'), f('customerLtv','customerLtv','customerLtvHelp','money'), f('margin','margin','marginHelp','percent'), f('fixedCosts','fixedCosts','fixedCostsHelp','money',false)],
+    defaults: {adSpend:1000,cpc:.80,aov:65,customerLtv:95,margin:55,fixedCosts:0},
+    stages: [{nameUk:'Покупка',nameEn:'Purchase',rate:2.5}]
+  },
+  leadgen: {
+    title: 'leadgenTitle', desc: 'leadgenDesc', basis: false, defaultBasis: 'first',
+    money: [f('valuePerSale','valuePerSale','valuePerSaleHelp','money'), f('margin','margin','marginHelp','percent'), f('fixedCosts','fixedCosts','fixedCostsHelp','money',false)],
+    defaults: {adSpend:1000,cpc:1.10,valuePerSale:250,margin:100,fixedCosts:0},
+    stages: [{nameUk:'Лід',nameEn:'Lead',rate:12},{nameUk:'Кваліфікований лід',nameEn:'Qualified lead',rate:55},{nameUk:'Продаж',nameEn:'Sale',rate:18}]
+  },
+  edtech: {
+    title: 'edtechTitle', desc: 'edtechDesc', basis: false, defaultBasis: 'first',
+    money: [f('studentValue','studentValue','studentValueHelp','money'), f('margin','margin','marginHelp','percent'), f('fixedCosts','fixedCosts','fixedCostsHelp','money',false)],
+    defaults: {adSpend:1000,cpc:.95,studentValue:500,margin:70,fixedCosts:0},
+    stages: [{nameUk:'Лід',nameEn:'Lead',rate:10},{nameUk:'Дзвінок / анкета',nameEn:'Call / application',rate:35},{nameUk:'Оплата',nameEn:'Payment',rate:12}]
+  },
+  saas: {
+    title: 'saasTitle', desc: 'saasDesc', basis: true, defaultBasis: 'ltv',
+    money: [f('monthlyArpu','monthlyArpu','monthlyArpuHelp','money'), f('lifetimeMonths','lifetimeMonths','lifetimeMonthsHelp','number'), f('margin','margin','marginHelp','percent'), f('fixedCosts','fixedCosts','fixedCostsHelp','money',false)],
+    defaults: {adSpend:1000,cpc:1.50,monthlyArpu:39,lifetimeMonths:10,margin:85,fixedCosts:0},
+    stages: [{nameUk:'Signup / trial',nameEn:'Signup / trial',rate:14},{nameUk:'Paid-клієнт',nameEn:'Paid customer',rate:8}]
+  }
+};
+
+const state = {language:'uk',currency:'USD',vertical:'ecom',basis:{},values:{},stages:{}};
+const $ = selector => document.querySelector(selector);
+const dom = {
+  currency: $('#currency'), langButtons:[...document.querySelectorAll('[data-lang]')], verticalTabs:$('#verticalTabs'),
+  trafficFields:$('#trafficFields'), funnelEditor:$('#funnelEditor'), addStage:$('#addStage'), moneyFields:$('#moneyFields'),
+  basisBox:$('#basisBox'), basisMode:$('#basisMode'), basisHint:$('#basisHint'), reset:$('#reset'), copy:$('#copy'), share:$('#share'), actionMessage:$('#actionMessage'),
+  statusBox:$('#statusBox'), statusText:$('#statusText'), heroResult:$('#heroResult'), profitValue:$('#profitValue'), roiValue:$('#roiValue'), resultBasis:$('#resultBasis'),
+  keyMetrics:$('#keyMetrics'), compareGrid:$('#compareGrid'), funnel:$('#funnel'), advancedGrid:$('#advancedGrid'), insightText:$('#insightText'), fieldTemplate:$('#fieldTemplate'),
+  dashboardFunnel:$('#dashboardFunnel'), dashboardStats:$('#dashboardStats'), recommendations:$('#recommendations'), downloadReport:$('#downloadReport')
+};
+
+function t(key){ return I18N[state.language][key] ?? key; }
+function esc(value){ return String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+function cloneStages(stages){ return stages.map(s=>({...s,id:cryptoId()})); }
+function cryptoId(){ return (globalThis.crypto?.randomUUID?.() || `s-${Date.now()}-${Math.random().toString(16).slice(2)}`); }
+
+function ensureState(){
+  Object.entries(VERTICALS).forEach(([key,cfg])=>{
+    if(!state.values[key]) state.values[key]={...cfg.defaults};
+    state.values[key]={...cfg.defaults,...state.values[key]};
+    if(!state.basis[key]) state.basis[key]=cfg.defaultBasis;
+    if(!Array.isArray(state.stages[key]) || !state.stages[key].length) state.stages[key]=cloneStages(cfg.stages);
+    state.stages[key]=state.stages[key].map(s=>({
+      id:s.id||cryptoId(),
+      nameUk:String(s.nameUk||s.name||'Новий етап'),
+      nameEn:String(s.nameEn||s.name||'New stage'),
+      rate:Number.isFinite(Number(s.rate))?Number(s.rate):0
+    }));
+  });
+}
+
+function restore(){
+  try {
+    const hash=new URLSearchParams(location.hash.slice(1)).get(HASH_KEY);
+    let saved=null;
+    if(hash){
+      const normalized=hash.replaceAll('-','+').replaceAll('_','/');
+      saved=JSON.parse(decodeURIComponent(escape(atob(normalized))));
+    } else saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(saved&&typeof saved==='object'){
+      if(['uk','en'].includes(saved.language)) state.language=saved.language;
+      if(['USD','EUR','UAH','GBP'].includes(saved.currency)) state.currency=saved.currency;
+      if(VERTICALS[saved.vertical]) state.vertical=saved.vertical;
+      if(saved.basis&&typeof saved.basis==='object') state.basis=saved.basis;
+      if(saved.values&&typeof saved.values==='object') state.values=saved.values;
+      if(saved.stages&&typeof saved.stages==='object') state.stages=saved.stages;
+    }
+  } catch(_){}
+}
+function save(){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); }catch(_){} }
+
+function renderTranslations(){
+  document.documentElement.lang=state.language;
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  dom.langButtons.forEach(btn=>btn.classList.toggle('active',btn.dataset.lang===state.language));
+  dom.currency.value=state.currency;
+}
+
+function renderVerticals(){
+  dom.verticalTabs.replaceChildren();
+  Object.entries(VERTICALS).forEach(([key,cfg])=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='vertical-tab'+(state.vertical===key?' active':'');
+    btn.innerHTML=`<strong>${esc(t(cfg.title))}</strong><span>${esc(t(cfg.desc))}</span>`;
+    btn.onclick=()=>{ state.vertical=key; renderAll(); save(); };
+    dom.verticalTabs.append(btn);
+  });
+}
+
+function moneySymbol(){ return ({USD:'$',EUR:'€',UAH:'₴',GBP:'£'})[state.currency]; }
+function trafficDefinitions(){ return [f('adSpend','adSpend','adSpendHelp','money'),f('cpc','cpc','cpcHelp','money')]; }
+
+function renderFieldSet(container,defs){
+  container.replaceChildren();
+  const values=state.values[state.vertical];
+  defs.forEach(def=>{
+    const node=dom.fieldTemplate.content.firstElementChild.cloneNode(true);
+    if(defs.length%2===1 && def===defs.at(-1)) node.classList.add('full');
+    node.dataset.field=def.id;
+    node.querySelector('.field-label').textContent=t(def.label);
+    node.querySelector('.optional').textContent=def.required?'':t('optional');
+    node.querySelector('.field-help').textContent=t(def.help);
+    const input=node.querySelector('input');
+    input.value=values[def.id] ?? '';
+    input.dataset.type=def.type;
+    node.querySelector('.prefix').textContent=def.type==='money'?moneySymbol():'';
+    node.querySelector('.suffix').textContent=def.type==='percent'?'%':'';
+    input.oninput=()=>{
+      state.values[state.vertical][def.id]=input.value===''?'':Number(input.value);
+      validateField(node,def);
+      calculateAndRender();
+      save();
+    };
+    container.append(node);
+  });
+}
+
+function stageName(stage){ return state.language==='uk'?stage.nameUk:stage.nameEn; }
+function renderFunnelEditor(){
+  const stages=state.stages[state.vertical];
+  dom.funnelEditor.replaceChildren();
+  stages.forEach((stage,index)=>{
+    const row=document.createElement('div');
+    row.className='stage-row';
+    const source=index===0?t('clicksSource'):`${stageName(stages[index-1])} →`;
+    row.innerHTML=`
+      <span class="stage-source" title="${esc(source)}">${esc(source)}</span>
+      <input class="stage-name" type="text" value="${esc(stageName(stage))}" aria-label="Stage name">
+      <span class="stage-rate-wrap"><input class="stage-rate" type="number" inputmode="decimal" min="0" max="100" step="any" value="${esc(stage.rate)}" aria-label="Conversion rate"><span>%</span></span>
+      <button class="delete-stage" type="button" title="${esc(t('deleteStage'))}" aria-label="${esc(t('deleteStage'))}" ${stages.length===1?'disabled':''}>×</button>`;
+    const nameInput=row.querySelector('.stage-name');
+    const rateInput=row.querySelector('.stage-rate');
+    nameInput.oninput=()=>{
+      if(state.language==='uk') stage.nameUk=nameInput.value || t('newStage');
+      else stage.nameEn=nameInput.value || t('newStage');
+      calculateAndRender();
+      save();
+      [...dom.funnelEditor.querySelectorAll('.stage-source')].forEach((el,i)=>{
+        if(i>0){ const text=`${stageName(stages[i-1])} →`; el.textContent=text; el.title=text; }
+      });
+    };
+    rateInput.oninput=()=>{
+      const val=Number(rateInput.value);
+      stage.rate=Number.isFinite(val)?Math.min(100,Math.max(0,val)):0;
+      calculateAndRender(); save();
+    };
+    row.querySelector('.delete-stage').onclick=()=>{
+      if(stages.length<=1) return;
+      stages.splice(index,1);
+      renderFunnelEditor(); calculateAndRender(); save();
+    };
+    dom.funnelEditor.append(row);
+  });
+}
+
+function renderBasis(){
+  const cfg=VERTICALS[state.vertical];
+  dom.basisBox.hidden=!cfg.basis;
+  if(!cfg.basis) return;
+  const options=state.vertical==='saas'?[['first','firstMonth'],['ltv','lifetime']]:[['first','firstOrder'],['ltv','lifetime']];
+  dom.basisMode.replaceChildren();
+  options.forEach(([value,label])=>{
+    const btn=document.createElement('button'); btn.type='button'; btn.textContent=t(label); btn.className=state.basis[state.vertical]===value?'active':'';
+    btn.onclick=()=>{ state.basis[state.vertical]=value; renderBasis(); calculateAndRender(); save(); };
+    dom.basisMode.append(btn);
+  });
+  dom.basisHint.textContent=t(state.vertical==='saas'?'saasBasisHint':'ecomBasisHint');
+}
+
+function renderFields(){
+  const cfg=VERTICALS[state.vertical];
+  renderFieldSet(dom.trafficFields,trafficDefinitions());
+  renderFunnelEditor();
+  renderFieldSet(dom.moneyFields,cfg.money);
+  renderBasis();
+}
+
+function validateField(node,def){
+  const input=node.querySelector('input');
+  const val=Number(input.value);
+  let error='';
+  if(def.required && (!Number.isFinite(val) || val<=0)) error='errorPositive';
+  if(!def.required && input.value!=='' && (!Number.isFinite(val)||val<0)) error='errorNonNegative';
+  if(def.type==='percent' && (val<0||val>100||!Number.isFinite(val))) error='errorPercent';
+  node.classList.toggle('invalid',Boolean(error));
+  node.querySelector('.field-error').textContent=error?t(error):'';
+  return !error;
+}
+function validate(){
+  const cfg=VERTICALS[state.vertical];
+  const defs=[...trafficDefinitions(),...cfg.money];
+  let ok=true;
+  defs.forEach(def=>{
+    const node=document.querySelector(`[data-field="${def.id}"]`);
+    if(node&&!validateField(node,def)) ok=false;
+  });
+  if(!state.stages[state.vertical]?.length) ok=false;
+  return ok;
+}
+
+function calculate(){
+  const cfg=VERTICALS[state.vertical];
+  const v=state.values[state.vertical];
+  const spend=Number(v.adSpend)||0;
+  const cpc=Number(v.cpc)||0;
+  const fixed=Math.max(0,Number(v.fixedCosts)||0);
+  const totalCosts=spend+fixed;
+  const clicks=spend/cpc;
+  const funnel=[{label:t('clicks'),value:clicks}];
+  let current=clicks;
+  const stageCounts=[];
+  state.stages[state.vertical].forEach(stage=>{
+    current*=Math.min(100,Math.max(0,Number(stage.rate)||0))/100;
+    const item={label:stageName(stage),value:current};
+    funnel.push(item); stageCounts.push(item);
+  });
+  const sales=current;
+
+  let firstRevenuePerSale=0, ltvRevenuePerSale=0;
+  if(state.vertical==='ecom'){ firstRevenuePerSale=Number(v.aov)||0; ltvRevenuePerSale=Math.max(Number(v.customerLtv)||0,firstRevenuePerSale); }
+  if(state.vertical==='leadgen'){ firstRevenuePerSale=Number(v.valuePerSale)||0; ltvRevenuePerSale=firstRevenuePerSale; }
+  if(state.vertical==='edtech'){ firstRevenuePerSale=Number(v.studentValue)||0; ltvRevenuePerSale=firstRevenuePerSale; }
+  if(state.vertical==='saas'){ firstRevenuePerSale=Number(v.monthlyArpu)||0; ltvRevenuePerSale=firstRevenuePerSale*(Number(v.lifetimeMonths)||0); }
+
+  const margin=(Number(v.margin)||0)/100;
+  const basis=cfg.basis?state.basis[state.vertical]:'first';
+  const revenuePerSale=basis==='ltv'?ltvRevenuePerSale:firstRevenuePerSale;
+  const revenue=sales*revenuePerSale;
+  const grossProfit=revenue*margin;
+  const profit=grossProfit-totalCosts;
+  const roi=totalCosts>0?profit/totalCosts:NaN;
+  const roas=spend>0?revenue/spend:NaN;
+  const cpa=sales>0?spend/sales:Infinity;
+  const allInCpa=sales>0?totalCosts/sales:Infinity;
+  const overallCvr=clicks>0?sales/clicks:0;
+  const contributionPerSale=revenuePerSale*margin;
+  const maxCpa=sales>0?contributionPerSale-(fixed/sales):contributionPerSale;
+  const maxCpc=totalCosts>0?overallCvr*contributionPerSale*(spend/totalCosts):0;
+  const safety=maxCpa>0?(maxCpa-cpa)/maxCpa:NaN;
+  const breakEvenSales=contributionPerSale>0?totalCosts/contributionPerSale:Infinity;
+  const requiredCvr=clicks>0?breakEvenSales/clicks:Infinity;
+  const breakEvenRoas=margin>0&&spend>0?totalCosts/(spend*margin):Infinity;
+  const firstStageCost=stageCounts[0]?.value>0?spend/stageCounts[0].value:Infinity;
+  const secondStageCost=stageCounts[1]?.value>0?spend/stageCounts[1].value:Infinity;
+
+  const monthlyGrossPerCustomer=state.vertical==='saas'?firstRevenuePerSale*margin:NaN;
+  const grossLtvPerCustomer=ltvRevenuePerSale*margin;
+  const ltvCac=state.vertical==='saas'&&allInCpa>0&&Number.isFinite(allInCpa)?grossLtvPerCustomer/allInCpa:NaN;
+  const payback=state.vertical==='saas'&&monthlyGrossPerCustomer>0?allInCpa/monthlyGrossPerCustomer:NaN;
+  const mrr=state.vertical==='saas'?sales*firstRevenuePerSale:NaN;
+
+  return {cfg,v,spend,cpc,fixed,totalCosts,clicks,funnel,stageCounts,sales,basis,revenuePerSale,revenue,grossProfit,profit,roi,roas,cpa,allInCpa,overallCvr,maxCpa,maxCpc,safety,breakEvenSales,requiredCvr,breakEvenRoas,firstStageCost,secondStageCost,grossLtvPerCustomer,ltvCac,payback,mrr};
+}
+
+function tone(r){
+  if(!Number.isFinite(r.profit)) return 'warning';
+  const threshold=Math.max(1,r.totalCosts*.01);
+  if(r.profit<-threshold) return 'negative';
+  if(!Number.isFinite(r.safety)||r.safety<.12) return 'warning';
+  return 'positive';
+}
+
+function money(value){
+  if(!Number.isFinite(value)) return '—';
+  const digits=Math.abs(value)<10?2:0;
+  return new Intl.NumberFormat(state.language==='uk'?'uk-UA':'en-US',{style:'currency',currency:state.currency,maximumFractionDigits:digits,minimumFractionDigits:digits}).format(value);
+}
+function pct(value){ return Number.isFinite(value)?new Intl.NumberFormat(state.language==='uk'?'uk-UA':'en-US',{style:'percent',maximumFractionDigits:1}).format(value):'—'; }
+function ratio(value){ return Number.isFinite(value)?`${new Intl.NumberFormat(state.language==='uk'?'uk-UA':'en-US',{maximumFractionDigits:2}).format(value)}×`:'—'; }
+function count(value){ return Number.isFinite(value)?new Intl.NumberFormat(state.language==='uk'?'uk-UA':'en-US',{maximumFractionDigits:value<10?2:0}).format(value):'—'; }
+function fill(text,vars){ return text.replace(/\{(\w+)\}/g,(_,k)=>vars[k]??''); }
+
+function calculateAndRender(){
+  if(!validate()) return renderInvalid();
+  renderResults(calculate());
+}
+function renderInvalid(){
+  dom.statusBox.className='status warning'; dom.statusText.textContent=t('invalid'); dom.heroResult.className='hero-result warning';
+  dom.profitValue.textContent='—'; dom.roiValue.textContent='—'; dom.keyMetrics.replaceChildren(); dom.compareGrid.replaceChildren(); dom.funnel.replaceChildren(); dom.advancedGrid.replaceChildren(); dom.insightText.textContent='—';
+  dom.dashboardFunnel.replaceChildren(); dom.dashboardStats.replaceChildren(); dom.recommendations.replaceChildren();
+}
+
+function card(label,value,help='',tone=''){ return {label,value,help,tone}; }
+function renderCards(container,items,className){
+  container.replaceChildren();
+  items.forEach(item=>{
+    const el=document.createElement('div'); el.className=className+(item.tone?' '+item.tone:'');
+    if(className==='metric-card') el.innerHTML=`<span class="metric-label">${esc(t(item.label))}</span><strong class="metric-value">${esc(item.value)}</strong><span class="metric-help">${esc(item.help?t(item.help):'')}</span>`;
+    else el.innerHTML=`<span>${esc(t(item.label))}</span><strong>${esc(item.value)}</strong>`;
+    container.append(el);
+  });
+}
+
+function renderResults(r){
+  const resultTone=tone(r), statusKey=resultTone==='positive'?'profitable':resultTone==='negative'?'loss':'nearLimit';
+  dom.statusBox.className='status '+resultTone; dom.statusText.textContent=t(statusKey); dom.heroResult.className='hero-result '+resultTone;
+  dom.profitValue.textContent=money(r.profit); dom.roiValue.textContent=pct(r.roi);
+  dom.resultBasis.textContent=t(r.basis==='ltv'?'basisLifetime':(state.vertical==='saas'?'basisFirstMonth':'basisFirstOrder'));
+
+  renderCards(dom.keyMetrics,[
+    card('revenue',money(r.revenue),'revenueHelp'),
+    card('salesMetric',count(r.sales),'salesMetricHelp'),
+    card('cpa',money(r.cpa),'cpaHelp',r.cpa<=r.maxCpa?'positive':'negative'),
+    card('roas',ratio(r.roas),'roasHelp',r.roas>=r.breakEvenRoas?'positive':'negative')
+  ],'metric-card');
+
+  renderCards(dom.compareGrid,[
+    card('currentCpa',money(r.cpa),'',r.cpa<=r.maxCpa?'positive':'negative'),
+    card('maxCpa',money(Math.max(0,r.maxCpa))),
+    card('currentCpc',money(r.cpc),'',r.cpc<=r.maxCpc?'positive':'negative'),
+    card('maxCpc',money(Math.max(0,r.maxCpc))),
+    card('safety',Number.isFinite(r.safety)?pct(r.safety):'—','',r.safety>=.12?'positive':r.safety>=0?'':'negative'),
+    card('requiredCvr',pct(r.requiredCvr))
+  ],'compare-item');
+
+  renderFunnel(r);
+  renderAdvanced(r);
+  renderDashboard(r,resultTone);
+  dom.insightText.textContent=buildInsight(r,resultTone);
+}
+
+function renderFunnel(r){
+  dom.funnel.replaceChildren();
+  const max=r.funnel[0]?.value||1;
+  r.funnel.forEach(stage=>{
+    const row=document.createElement('div'); row.className='funnel-row';
+    const width=Math.max(.6,Math.min(100,stage.value/max*100));
+    row.innerHTML=`<span class="funnel-label" title="${esc(stage.label)}">${esc(stage.label)}</span><span class="funnel-track"><span class="funnel-fill" style="width:${width}%"></span></span><strong class="funnel-value">${esc(count(stage.value))}</strong>`;
+    dom.funnel.append(row);
+  });
+}
+
+function renderAdvanced(r){
+  const items=[
+    card('totalCosts',money(r.totalCosts)), card('allInCpa',money(r.allInCpa)), card('overallCvr',pct(r.overallCvr)),
+    card('grossProfit',money(r.grossProfit)), card('breakEvenSales',count(r.breakEvenSales)), card('breakEvenRoas',ratio(r.breakEvenRoas))
+  ];
+  if(r.stageCounts.length>=1) items.push(card('firstStageCost',money(r.firstStageCost)));
+  if(r.stageCounts.length>=2) items.push(card('secondStageCost',money(r.secondStageCost)));
+  if(state.vertical==='saas') items.push(card('mrr',money(r.mrr)),card('grossLtv',money(r.grossLtvPerCustomer)),card('ltvCac',ratio(r.ltvCac)),card('payback',Number.isFinite(r.payback)?`${count(r.payback)} ${t('months')}`:'—'));
+  renderCards(dom.advancedGrid,items,'advanced-item');
+}
+
+function getFunnelAnalysis(r){
+  const rows=r.funnel.map((stage,index)=>{
+    const previous=index>0?r.funnel[index-1].value:null;
+    const rate=index===0?1:(previous>0?stage.value/previous:0);
+    const lost=index===0?0:Math.max(0,previous-stage.value);
+    return {...stage,index,rate,lost};
+  });
+  const transitions=rows.slice(1);
+  const weakest=transitions.length?transitions.reduce((a,b)=>b.rate<a.rate?b:a):null;
+  return {rows,weakest};
+}
+
+function buildRecommendations(r,resultTone){
+  const {rows,weakest}=getFunnelAnalysis(r);
+  const recs=[];
+  if(weakest){
+    recs.push(fill(t('recommendationWeak'),{
+      from:rows[weakest.index-1].label,
+      to:weakest.label,
+      rate:pct(weakest.rate)
+    }));
+  }
+  if(resultTone==='negative'){
+    recs.push(fill(t('recommendationLoss'),{cpa:money(Math.max(0,r.maxCpa)),cvr:pct(r.requiredCvr)}));
+  } else if(resultTone==='warning'){
+    recs.push(fill(t('recommendationThin'),{gap:pct(Math.max(0,r.safety))}));
+  } else {
+    recs.push(fill(t('recommendationScale'),{gap:pct(Math.max(0,r.safety))}));
+  }
+  const fixedShare=r.totalCosts>0?r.fixed/r.totalCosts:0;
+  if(fixedShare>=.15) recs.push(fill(t('recommendationCosts'),{share:pct(fixedShare)}));
+  return recs.slice(0,3);
+}
+
+function renderDashboard(r,resultTone){
+  const {rows,weakest}=getFunnelAnalysis(r);
+  dom.dashboardFunnel.replaceChildren();
+  const step=rows.length>1?Math.min(10,54/(rows.length-1)):0;
+  rows.forEach((stage,index)=>{
+    const el=document.createElement('div');
+    el.className='dashboard-stage';
+    el.style.setProperty('--stage-width',`${Math.max(46,100-index*step)}%`);
+    const meta=index===0
+      ? `${t('cpc')}: ${money(r.cpc)}`
+      : `${t('stageConversion')}: ${pct(stage.rate)} · ${t('stageDrop')}: ${count(stage.lost)}`;
+    el.innerHTML=`<div class="dashboard-stage-main"><strong title="${esc(stage.label)}">${esc(stage.label)}</strong><span>${esc(count(stage.value))}</span></div><div class="dashboard-stage-meta"><span>${esc(meta)}</span>${weakest&&stage.index===weakest.index?`<span class="drop">${esc(t('weakestStage'))}</span>`:''}</div>`;
+    dom.dashboardFunnel.append(el);
+  });
+
+  renderCards(dom.dashboardStats,[
+    card('finalConversion',pct(r.overallCvr)),
+    card('costPerFinal',money(r.cpa)),
+    card('maxCpa',money(Math.max(0,r.maxCpa))),
+    card('safety',Number.isFinite(r.safety)?pct(r.safety):'—')
+  ],'dashboard-stat');
+
+  dom.recommendations.replaceChildren();
+  buildRecommendations(r,resultTone).forEach(text=>{
+    const p=document.createElement('p'); p.className='recommendation'; p.textContent=text; dom.recommendations.append(p);
+  });
+}
+
+function reportValueRows(r){
+  const cfg=VERTICALS[state.vertical];
+  const defs=[...trafficDefinitions(),...cfg.money];
+  return defs.map(def=>{
+    const raw=state.values[state.vertical][def.id];
+    const value=def.type==='money'?money(Number(raw)||0):def.type==='percent'?`${count(Number(raw)||0)}%`:count(Number(raw)||0);
+    return [t(def.label),value];
+  });
+}
+
+function bytesFromDataUrl(dataUrl){
+  const binary=atob(dataUrl.split(',')[1]);
+  const out=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) out[i]=binary.charCodeAt(i);
+  return out;
+}
+
+function joinBytes(parts){
+  const total=parts.reduce((sum,part)=>sum+part.length,0);
+  const out=new Uint8Array(total);
+  let offset=0;
+  parts.forEach(part=>{ out.set(part,offset); offset+=part.length; });
+  return out;
+}
+
+function buildImagePdf(jpegPages,pixelWidth,pixelHeight){
+  const enc=new TextEncoder();
+  const ascii=text=>enc.encode(text);
+  const objectCount=2+jpegPages.length*3;
+  const objects=new Array(objectCount+1);
+  const pageRefs=[];
+
+  jpegPages.forEach((jpeg,index)=>{
+    const pageObject=3+index*3;
+    const imageObject=pageObject+1;
+    const contentObject=pageObject+2;
+    pageRefs.push(`${pageObject} 0 R`);
+    const imageName=`Im${index+1}`;
+    const content=`q\n595.28 0 0 841.89 0 0 cm\n/${imageName} Do\nQ\n`;
+    const contentBytes=ascii(content);
+    objects[pageObject]=ascii(`${pageObject} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /${imageName} ${imageObject} 0 R >> >> /Contents ${contentObject} 0 R >>\nendobj\n`);
+    objects[imageObject]=joinBytes([
+      ascii(`${imageObject} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${pixelWidth} /Height ${pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`),
+      jpeg,
+      ascii('\nendstream\nendobj\n')
+    ]);
+    objects[contentObject]=joinBytes([
+      ascii(`${contentObject} 0 obj\n<< /Length ${contentBytes.length} >>\nstream\n`),
+      contentBytes,
+      ascii('endstream\nendobj\n')
+    ]);
+  });
+
+  objects[1]=ascii('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+  objects[2]=ascii(`2 0 obj\n<< /Type /Pages /Kids [${pageRefs.join(' ')}] /Count ${jpegPages.length} >>\nendobj\n`);
+
+  const header=ascii('%PDF-1.4\n%âãÏÓ\n');
+  const chunks=[header];
+  const offsets=new Array(objectCount+1).fill(0);
+  let position=header.length;
+  for(let i=1;i<=objectCount;i++){
+    offsets[i]=position;
+    chunks.push(objects[i]);
+    position+=objects[i].length;
+  }
+  const xrefPosition=position;
+  let xref=`xref\n0 ${objectCount+1}\n0000000000 65535 f \n`;
+  for(let i=1;i<=objectCount;i++) xref+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
+  xref+=`trailer\n<< /Size ${objectCount+1} /Root 1 0 R >>\nstartxref\n${xrefPosition}\n%%EOF`;
+  chunks.push(ascii(xref));
+  return new Blob(chunks,{type:'application/pdf'});
+}
+
+function createReportPdf(r,resultTone){
+  const WIDTH=1240, HEIGHT=1754, MARGIN=72, BOTTOM=HEIGHT-72;
+  const pages=[];
+  let canvas,ctx,y;
+  const color={text:'#17191c',muted:'#6c727f',line:'#dfe2e7',soft:'#f7f7f8',positive:'#147a45',warning:'#956000',negative:'#bd2c2c'};
+  const setFont=(size,weight=400)=>{ ctx.font=`${weight} ${size}px Arial, sans-serif`; };
+
+  function newPage(){
+    canvas=document.createElement('canvas');
+    canvas.width=WIDTH; canvas.height=HEIGHT;
+    ctx=canvas.getContext('2d',{alpha:false});
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,WIDTH,HEIGHT);
+    ctx.textBaseline='top';
+    y=MARGIN;
+    pages.push({canvas,ctx});
+  }
+  function ensure(height){ if(y+height>BOTTOM){ newPage(); return true; } return false; }
+  function wrappedLines(text,maxWidth){
+    const lines=[];
+    String(text).split(/\n/).forEach(paragraph=>{
+      const words=paragraph.split(/\s+/).filter(Boolean);
+      if(!words.length){ lines.push(''); return; }
+      let line='';
+      words.forEach(word=>{
+        const test=line?`${line} ${word}`:word;
+        if(ctx.measureText(test).width<=maxWidth){ line=test; return; }
+        if(line) lines.push(line);
+        if(ctx.measureText(word).width<=maxWidth){ line=word; return; }
+        let chunk='';
+        for(const char of word){
+          const next=chunk+char;
+          if(ctx.measureText(next).width>maxWidth&&chunk){ lines.push(chunk); chunk=char; }
+          else chunk=next;
+        }
+        line=chunk;
+      });
+      if(line) lines.push(line);
+    });
+    return lines;
+  }
+  function drawWrapped(text,x,top,maxWidth,lineHeight,fill=color.text){
+    ctx.fillStyle=fill;
+    const lines=wrappedLines(text,maxWidth);
+    lines.forEach((line,index)=>ctx.fillText(line,x,top+index*lineHeight));
+    return top+lines.length*lineHeight;
+  }
+  function fittedText(text,x,top,maxWidth,size,weight=700,fill=color.text,align='left'){
+    let current=size; setFont(current,weight);
+    while(current>15&&ctx.measureText(String(text)).width>maxWidth){ current-=1; setFont(current,weight); }
+    ctx.fillStyle=fill; ctx.textAlign=align;
+    ctx.fillText(String(text),x,top);
+    ctx.textAlign='left';
+  }
+  function sectionTitle(title){
+    ensure(58); setFont(25,700); ctx.fillStyle=color.text; ctx.fillText(title,MARGIN,y); y+=42;
+  }
+  function horizontalLine(top=y){ ctx.strokeStyle=color.line; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(MARGIN,top); ctx.lineTo(WIDTH-MARGIN,top); ctx.stroke(); }
+  function drawMetricCards(items){
+    const gap=14, cols=4, cardW=(WIDTH-MARGIN*2-gap*(cols-1))/cols, cardH=112;
+    ensure(cardH*2+gap+10);
+    items.forEach(([label,value],index)=>{
+      const row=Math.floor(index/cols), col=index%cols;
+      const x=MARGIN+col*(cardW+gap), top=y+row*(cardH+gap);
+      ctx.fillStyle=color.soft; ctx.fillRect(x,top,cardW,cardH);
+      ctx.strokeStyle=color.line; ctx.lineWidth=2; ctx.strokeRect(x,top,cardW,cardH);
+      setFont(17,400); drawWrapped(label,x+16,top+15,cardW-32,21,color.muted);
+      fittedText(value,x+16,top+61,cardW-32,26,700,color.text);
+    });
+    y+=cardH*2+gap+8;
+  }
+  function tableHeader(columns,widths){
+    const rowH=38;
+    ctx.fillStyle='#f2f3f4'; ctx.fillRect(MARGIN,y,WIDTH-MARGIN*2,rowH);
+    let x=MARGIN;
+    columns.forEach((label,index)=>{
+      setFont(14,700); ctx.fillStyle=color.muted;
+      const align=index===columns.length-1?'right':'left'; ctx.textAlign=align;
+      ctx.fillText(label,align==='right'?x+widths[index]-10:x+10,y+10); ctx.textAlign='left';
+      x+=widths[index];
+    });
+    y+=rowH;
+  }
+  function drawTable(columns,rows,widths){
+    tableHeader(columns,widths);
+    rows.forEach(row=>{
+      setFont(17,400);
+      const lineCounts=row.map((cell,index)=>wrappedLines(cell,widths[index]-20).length);
+      const rowH=Math.max(42,Math.max(...lineCounts)*22+18);
+      if(ensure(rowH+40)) tableHeader(columns,widths);
+      let x=MARGIN;
+      row.forEach((cell,index)=>{
+        setFont(17,index===row.length-1?700:400);
+        const align=index===row.length-1?'right':'left';
+        const textX=align==='right'?x+widths[index]-10:x+10;
+        ctx.textAlign=align;
+        const lines=wrappedLines(cell,widths[index]-20);
+        lines.forEach((line,lineIndex)=>ctx.fillText(line,textX,y+9+lineIndex*22));
+        ctx.textAlign='left'; x+=widths[index];
+      });
+      ctx.strokeStyle=color.line; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(MARGIN,y+rowH); ctx.lineTo(WIDTH-MARGIN,y+rowH); ctx.stroke();
+      y+=rowH;
+    });
+    y+=12;
+  }
+
+  newPage();
+  const cfg=VERTICALS[state.vertical];
+  const locale=state.language==='uk'?'uk-UA':'en-US';
+  const generated=new Intl.DateTimeFormat(locale,{dateStyle:'medium',timeStyle:'short'}).format(new Date());
+  const basis=t(r.basis==='ltv'?'basisLifetime':(state.vertical==='saas'?'basisFirstMonth':'basisFirstOrder'));
+  const statusLabel=t(resultTone==='positive'?'profitable':resultTone==='warning'?'nearLimit':'loss');
+  const statusColor=resultTone==='positive'?color.positive:resultTone==='warning'?color.warning:color.negative;
+
+  setFont(15,700); ctx.fillStyle=color.muted; ctx.fillText(t('brandSubtitle').toUpperCase(),MARGIN,y); y+=30;
+  setFont(44,700); ctx.fillStyle=color.text; ctx.fillText(t('reportTitle'),MARGIN,y);
+  const statusW=285,statusH=56,statusX=WIDTH-MARGIN-statusW;
+  ctx.strokeStyle=color.line; ctx.lineWidth=2; ctx.strokeRect(statusX,y-4,statusW,statusH); ctx.fillStyle=statusColor; ctx.fillRect(statusX,y-4,7,statusH);
+  setFont(17,700); drawWrapped(statusLabel,statusX+20,y+12,statusW-34,21,color.text);
+  y+=62; setFont(18,400); ctx.fillStyle=color.muted; ctx.fillText(`${t(cfg.title)} · ${basis}`,MARGIN,y); y+=28;
+  setFont(15,400); ctx.fillText(`${t('reportGenerated')}: ${generated}`,MARGIN,y); y+=38; horizontalLine(); y+=30;
+
+  sectionTitle(t('reportResults'));
+  drawMetricCards([
+    [t('netProfit'),money(r.profit)],['ROI',pct(r.roi)],[t('revenue'),money(r.revenue)],[t('roas'),ratio(r.roas)],
+    [t('cpa'),money(r.cpa)],[t('maxCpa'),money(Math.max(0,r.maxCpa))],[t('overallCvr'),pct(r.overallCvr)],[t('totalCosts'),money(r.totalCosts)]
+  ]);
+
+  horizontalLine(); y+=30; sectionTitle(t('reportInputs'));
+  const inputRows=reportValueRows(r).concat(state.stages[state.vertical].map((stage,index)=>[
+    `${index===0?t('clicks'):stageName(state.stages[state.vertical][index-1])} → ${stageName(stage)}`,
+    `${count(stage.rate)}%`
+  ]));
+  drawTable([t('reportInputs'),''],inputRows,[760,WIDTH-MARGIN*2-760]);
+
+  horizontalLine(); y+=30; sectionTitle(t('reportFunnel'));
+  const {rows}=getFunnelAnalysis(r);
+  drawTable(
+    [t('reportStage'),t('reportCount'),t('reportConversion')],
+    rows.map((stage,index)=>[stage.label,count(stage.value),index===0?'—':pct(stage.rate)]),
+    [580,230,WIDTH-MARGIN*2-810]
+  );
+
+  horizontalLine(); y+=30; sectionTitle(t('recommendationsTitle'));
+  const recommendations=buildRecommendations(r,resultTone);
+  recommendations.forEach((text,index)=>{
+    setFont(18,400);
+    const lines=wrappedLines(text,WIDTH-MARGIN*2-50);
+    const blockH=lines.length*25+18;
+    ensure(blockH);
+    ctx.fillStyle=color.text; ctx.fillText(`${index+1}.`,MARGIN,y);
+    drawWrapped(text,MARGIN+38,y,WIDTH-MARGIN*2-38,25,color.text);
+    y+=blockH;
+  });
+
+  ensure(95); y+=12; horizontalLine(); y+=22;
+  setFont(14,400); drawWrapped(`${t('reportNote')}${t('disclaimer')}`,MARGIN,y,WIDTH-MARGIN*2,20,color.muted);
+
+  pages.forEach((page,index)=>{
+    const pageCtx=page.ctx;
+    pageCtx.strokeStyle=color.line; pageCtx.lineWidth=1; pageCtx.beginPath(); pageCtx.moveTo(MARGIN,HEIGHT-50); pageCtx.lineTo(WIDTH-MARGIN,HEIGHT-50); pageCtx.stroke();
+    pageCtx.font='400 13px Arial, sans-serif'; pageCtx.fillStyle=color.muted; pageCtx.textBaseline='top';
+    pageCtx.fillText('Buying Profitability Calculator',MARGIN,HEIGHT-38);
+    const pageNumber=`${index+1} / ${pages.length}`; pageCtx.textAlign='right'; pageCtx.fillText(pageNumber,WIDTH-MARGIN,HEIGHT-38); pageCtx.textAlign='left';
+  });
+
+  const jpegPages=pages.map(page=>bytesFromDataUrl(page.canvas.toDataURL('image/jpeg',.94)));
+  return buildImagePdf(jpegPages,WIDTH,HEIGHT);
+}
+
+async function downloadReport(){
+  if(!validate()) return showMessage(t('invalid'),true);
+  const button=dom.downloadReport;
+  try{
+    button.disabled=true;
+    button.textContent=t('reportGenerating');
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    const r=calculate();
+    const resultTone=tone(r);
+    const blob=createReportPdf(r,resultTone);
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const slug=state.vertical.replace(/[^a-z0-9-]/gi,'-');
+    a.href=url;
+    a.download=`buying-report-${slug}-${new Date().toISOString().slice(0,10)}.pdf`;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    showMessage(t('reportDownloaded'));
+  } catch(error){
+    console.error(error);
+    showMessage(t('reportError'),true);
+  } finally {
+    button.disabled=false;
+    button.textContent=t('downloadReport');
+  }
+}
+
+function buildInsight(r,resultTone){
+  if(!Number.isFinite(r.sales)||r.sales<.01) return t('insightNoSales');
+  if(resultTone==='positive') return fill(t('insightStrong'),{gap:pct(Math.max(0,r.safety))});
+  if(resultTone==='warning'&&r.profit>=0) return fill(t('insightThin'),{gap:pct(Math.max(0,r.safety))});
+  return fill(t('insightLoss'),{delta:money(Math.max(0,r.cpa-r.maxCpa)),cvr:pct(r.requiredCvr)});
+}
+
+function renderAll(){ ensureState(); renderTranslations(); renderVerticals(); renderFields(); calculateAndRender(); }
+
+function copyText(){
+  if(!validate()) return showMessage(t('invalid'),true);
+  const r=calculate(), cfg=VERTICALS[state.vertical];
+  const funnelLines=r.funnel.map(stage=>`${stage.label}: ${count(stage.value)}`);
+  const lines=[
+    `${t(cfg.title)} — ${t(r.basis==='ltv'?'basisLifetime':(state.vertical==='saas'?'basisFirstMonth':'basisFirstOrder'))}`,
+    `${t('adSpend')}: ${money(r.spend)}`,
+    `${t('cpc')}: ${money(r.cpc)}`,
+    ...funnelLines,
+    `${t('revenue')}: ${money(r.revenue)}`,
+    `${t('netProfit')}: ${money(r.profit)}`,
+    `ROI: ${pct(r.roi)}`,
+    `${t('cpa')}: ${money(r.cpa)}`,
+    `${t('maxCpa')}: ${money(Math.max(0,r.maxCpa))}`,
+    `${t('roas')}: ${ratio(r.roas)}`,
+    `${t('breakEvenRoas')}: ${ratio(r.breakEvenRoas)}`
+  ];
+  writeClipboard(lines.join('\n')).then(ok=>showMessage(t(ok?'copied':'copyError'),!ok));
+}
+function copyLink(){
+  try {
+    const payload=btoa(unescape(encodeURIComponent(JSON.stringify(state)))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
+    const url=new URL(location.href); url.hash=`${HASH_KEY}=${payload}`;
+    writeClipboard(url.toString()).then(ok=>showMessage(t(ok?'linkCopied':'copyError'),!ok));
+  } catch(_){ showMessage(t('copyError'),true); }
+}
+async function writeClipboard(text){
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch(_){
+    const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.append(ta); ta.select();
+    const ok=document.execCommand('copy'); ta.remove(); return ok;
+  }
+}
+function showMessage(msg,error=false){
+  dom.actionMessage.textContent=msg; dom.actionMessage.style.color=error?'var(--negative)':'var(--positive)';
+  clearTimeout(showMessage.timer); showMessage.timer=setTimeout(()=>dom.actionMessage.textContent='',2500);
+}
+
+function bind(){
+  dom.langButtons.forEach(btn=>btn.onclick=()=>{ state.language=btn.dataset.lang; renderAll(); save(); });
+  dom.currency.onchange=e=>{ state.currency=e.target.value; renderFields(); calculateAndRender(); save(); };
+  dom.addStage.onclick=()=>{
+    state.stages[state.vertical].push({id:cryptoId(),nameUk:'Новий етап',nameEn:'New stage',rate:10});
+    renderFunnelEditor(); calculateAndRender(); save();
+  };
+  dom.reset.onclick=()=>{
+    const cfg=VERTICALS[state.vertical];
+    state.values[state.vertical]={...cfg.defaults};
+    state.basis[state.vertical]=cfg.defaultBasis;
+    state.stages[state.vertical]=cloneStages(cfg.stages);
+    renderAll(); save();
+  };
+  dom.copy.onclick=copyText;
+  dom.share.onclick=copyLink;
+  dom.downloadReport.onclick=downloadReport;
+}
+
+restore(); ensureState(); bind(); renderAll();
+</script>
+</body>
+</html>
