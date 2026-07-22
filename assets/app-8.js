@@ -1,0 +1,123 @@
+function calculateAndRender(){
+  if(!validate()) return renderInvalid();
+  renderResults(calculate());
+}
+function renderInvalid(){
+  dom.heroMainLabel.textContent=t(state.vertical==='brand'?'brandCost':'netProfit');
+  dom.limitsTitle.textContent=t(state.vertical==='brand'?'brandLimits':'buyingLimits');
+  dom.limitsHintText.textContent=t(state.vertical==='brand'?'brandLimitsHint':'limitsHint');
+  dom.resultBasis.textContent=state.vertical==='brand'?t('brandTitle'):'—';
+  dom.heroSideLabel.textContent=state.vertical==='brand'?t('brandTarget'):'ROI';
+  dom.statusBox.className='status warning'; dom.statusText.textContent=t('invalid'); dom.heroResult.className='hero-result warning';
+  dom.profitValue.textContent='—'; dom.roiValue.textContent='—'; dom.keyMetrics.replaceChildren(); dom.compareGrid.replaceChildren(); dom.funnel.replaceChildren(); dom.advancedGrid.replaceChildren(); dom.insightText.textContent='—';
+  dom.dashboardFunnel.replaceChildren(); dom.dashboardStats.replaceChildren(); dom.recommendations.replaceChildren();
+}
+
+function card(label,value,help='',tone=''){ return {label,value,help,tone}; }
+function renderCards(container,items,className){
+  container.replaceChildren();
+  items.forEach(item=>{
+    const el=document.createElement('div'); el.className=className+(item.tone?' '+item.tone:'');
+    if(className==='metric-card') el.innerHTML=`<span class="metric-label">${esc(t(item.label))}</span><strong class="metric-value">${esc(item.value)}</strong><span class="metric-help">${esc(item.help?t(item.help):'')}</span>`;
+    else el.innerHTML=`<span>${esc(t(item.label))}</span><strong>${esc(item.value)}</strong>`;
+    container.append(el);
+  });
+}
+
+function renderResults(r){
+  const resultTone=tone(r);
+
+  if(state.vertical==='brand'&&!r.brandHasValue){
+    const statusKey=resultTone==='positive'?'profitable':resultTone==='negative'?'loss':'nearLimit';
+    dom.statusBox.className='status '+resultTone;
+    dom.statusText.textContent=Number.isFinite(r.brandTarget)?t(statusKey):t('brandEfficiency');
+    dom.heroResult.className='hero-result '+resultTone;
+    dom.heroMainLabel.textContent=t('brandCost');
+    dom.heroSideLabel.textContent=t('brandTarget');
+    dom.profitValue.textContent=money(r.allInCpa);
+    dom.roiValue.textContent=Number.isFinite(r.brandTarget)?money(r.brandTarget):'—';
+    dom.resultBasis.textContent=t('brandTitle');
+    dom.limitsTitle.textContent=t('brandLimits');
+    dom.limitsHintText.textContent=t('brandLimitsHint');
+
+    renderCards(dom.keyMetrics,[
+      card('salesMetric',count(r.sales),'salesMetricHelp'),
+      card('overallCvr',pct(r.overallCvr)),
+      card('activeAudience',Number.isFinite(r.activeAudience)?count(r.activeAudience):'—'),
+      card('costPerActive',Number.isFinite(r.costPerActive)?money(r.costPerActive):'—')
+    ],'metric-card');
+
+    renderCards(dom.compareGrid,[
+      card('currentCpc',money(r.cpc)),
+      card('brandCost',money(r.allInCpa),'',Number.isFinite(r.brandTarget)?(r.allInCpa<=r.brandTarget?'positive':'negative'):''),
+      card('brandTarget',Number.isFinite(r.brandTarget)?money(r.brandTarget):'—'),
+      card('brandGap',Number.isFinite(r.brandGap)?pct(r.brandGap):'—','',Number.isFinite(r.brandGap)?(r.brandGap<=0?'positive':'negative'):''),
+      card('firstStageCost',money(r.firstStageCost)),
+      card('finalConversion',pct(r.overallCvr))
+    ],'compare-item');
+
+    renderFunnel(r);
+    renderAdvanced(r);
+    renderDashboard(r,resultTone);
+    dom.insightText.textContent=buildInsight(r,resultTone);
+    return;
+  }
+
+  const statusKey=resultTone==='positive'?'profitable':resultTone==='negative'?'loss':'nearLimit';
+  dom.limitsTitle.textContent=t('buyingLimits');
+  dom.limitsHintText.textContent=t('limitsHint');
+  dom.statusBox.className='status '+resultTone; dom.statusText.textContent=t(statusKey); dom.heroResult.className='hero-result '+resultTone;
+  dom.heroMainLabel.textContent=t('netProfit');
+  dom.heroSideLabel.textContent='ROI';
+  dom.profitValue.textContent=money(r.profit); dom.roiValue.textContent=pct(r.roi);
+  dom.resultBasis.textContent=t(r.basis==='ltv'?'basisLifetime':(state.vertical==='saas'?'basisFirstMonth':'basisFirstOrder'));
+
+  renderCards(dom.keyMetrics,[
+    card('revenue',money(r.revenue),'revenueHelp'),
+    card('salesMetric',count(r.sales),'salesMetricHelp'),
+    card('cpa',money(r.cpa),'cpaHelp',r.cpa<=r.maxCpa?'positive':'negative'),
+    card('roas',ratio(r.roas),'roasHelp',r.roas>=r.breakEvenRoas?'positive':'negative')
+  ],'metric-card');
+
+  renderCards(dom.compareGrid,[
+    card('currentCpa',money(r.cpa),'',r.cpa<=r.maxCpa?'positive':'negative'),
+    card('maxCpa',money(Math.max(0,r.maxCpa))),
+    card('currentCpc',money(r.cpc),'',r.cpc<=r.maxCpc?'positive':'negative'),
+    card('maxCpc',money(Math.max(0,r.maxCpc))),
+    card('safety',Number.isFinite(r.safety)?pct(r.safety):'—','',r.safety>=.12?'positive':r.safety>=0?'':'negative'),
+    card('requiredCvr',pct(r.requiredCvr))
+  ],'compare-item');
+
+  renderFunnel(r);
+  renderAdvanced(r);
+  renderDashboard(r,resultTone);
+  dom.insightText.textContent=buildInsight(r,resultTone);
+}
+function renderFunnel(r){
+  dom.funnel.replaceChildren();
+  const max=r.funnel[0]?.value||1;
+  r.funnel.forEach(stage=>{
+    const row=document.createElement('div'); row.className='funnel-row';
+    const width=Math.max(.6,Math.min(100,stage.value/max*100));
+    row.innerHTML=`<span class="funnel-label" title="${esc(stage.label)}">${esc(stage.label)}</span><span class="funnel-track"><span class="funnel-fill" style="width:${width}%"></span></span><strong class="funnel-value">${esc(count(stage.value))}</strong>`;
+    dom.funnel.append(row);
+  });
+}
+
+function renderAdvanced(r){
+  const items=[
+    card('totalCosts',money(r.totalCosts)), card('allInCpa',money(r.allInCpa)), card('overallCvr',pct(r.overallCvr)),
+    card('grossProfit',money(r.grossProfit)), card('breakEvenSales',count(r.breakEvenSales)), card('breakEvenRoas',ratio(r.breakEvenRoas))
+  ];
+  if(r.stageCounts.length>=1) items.push(card('firstStageCost',money(r.firstStageCost)));
+  if(r.stageCounts.length>=2) items.push(card('secondStageCost',money(r.secondStageCost)));
+  if(state.vertical==='saas') items.push(card('mrr',money(r.mrr)),card('grossLtv',money(r.grossLtvPerCustomer)),card('ltvCac',ratio(r.ltvCac)),card('payback',Number.isFinite(r.payback)?`${count(r.payback)} ${t('months')}`:'—'));
+  if(state.vertical==='brand'){
+    items.splice(3,3);
+    items.push(card('activeAudience',Number.isFinite(r.activeAudience)?count(r.activeAudience):'—'));
+    items.push(card('costPerActive',Number.isFinite(r.costPerActive)?money(r.costPerActive):'—'));
+    items.push(card('brandTarget',Number.isFinite(r.brandTarget)?money(r.brandTarget):'—'));
+  }
+  renderCards(dom.advancedGrid,items,'advanced-item');
+}
+
