@@ -185,4 +185,11 @@ function bind(){
   document.addEventListener('keydown',event=>{ if(event.key==='Escape'&&!dom.reportModal.hidden) closeReportModal(); });
 }
 
-restore(); ensureState(); bind(); renderAll();
+restore(); ensureState(); bind();
+['assets/patch-traffic-1.js?v=2','assets/patch-traffic-2.js?v=2','assets/patch-traffic-3.js?v=2','assets/patch-traffic-4.js?v=2','assets/patch-traffic-5.js?v=2']
+  .reduce((chain,src)=>chain.then(()=>new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src=src; script.onload=resolve; script.onerror=reject;
+    document.head.append(script);
+  })),Promise.resolve())
+  .catch(error=>{ console.error(error); renderAll(); });
