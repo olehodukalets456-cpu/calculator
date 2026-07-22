@@ -503,6 +503,60 @@
       background: #17191c;
       content: '';
     }
+    .stage-rate-wrap.invalid { border-color: var(--negative); box-shadow: 0 0 0 1px var(--negative); }
+
+    .report-modal[hidden] { display: none; }
+    .report-modal {
+      position: fixed;
+      z-index: 100;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+    .report-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(19, 21, 25, .48);
+    }
+    .report-modal-card {
+      position: relative;
+      width: min(440px, 100%);
+      padding: 21px;
+      border: 1px solid var(--line-dark);
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: 0 20px 60px rgba(20, 24, 32, .18);
+    }
+    .report-modal-card h3 { margin: 0; font-size: 19px; letter-spacing: -.025em; }
+    .report-modal-card p { margin: 6px 0 16px; color: var(--muted); font-size: 11px; }
+    .project-name-field { display: grid; gap: 7px; }
+    .project-name-field span { font-size: 11px; font-weight: 750; }
+    .project-name-field input {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 11px;
+      border: 1px solid var(--line-dark);
+      border-radius: 7px;
+      outline: 0;
+      background: #fff;
+      color: var(--text);
+    }
+    .project-name-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+    .project-name-error { min-height: 16px; margin-top: 6px; color: var(--negative); font-size: 10px; }
+    .report-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    .modal-button {
+      min-height: 38px;
+      padding: 8px 13px;
+      border: 1px solid var(--line-dark);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--text);
+      font-size: 10.5px;
+      font-weight: 800;
+    }
+    .modal-button.primary { border-color: #17191c; background: #17191c; color: #fff; }
+    .modal-button.primary:hover { background: #30343a; }
 
     .footer-note { margin-top: 14px; color: var(--muted); font-size: 10px; }
     .footer-note strong { color: var(--text); }
@@ -702,6 +756,23 @@
     </div>
   </main>
 
+  <div id="reportModal" class="report-modal" hidden>
+    <div id="reportModalBackdrop" class="report-modal-backdrop"></div>
+    <form id="reportForm" class="report-modal-card" novalidate>
+      <h3 data-i18n="projectNameTitle">Назва проєкту</h3>
+      <p data-i18n="projectNameHint">Вона буде в заголовку PDF та назві файлу.</p>
+      <label class="project-name-field">
+        <span data-i18n="projectNameLabel">Назва проєкту</span>
+        <input id="projectNameInput" type="text" maxlength="80" autocomplete="off" data-i18n-placeholder="projectNamePlaceholder" placeholder="Наприклад, Meta Ads — Польща">
+      </label>
+      <div id="projectNameError" class="project-name-error"></div>
+      <div class="report-modal-actions">
+        <button id="cancelReport" class="modal-button" type="button" data-i18n="cancel">Скасувати</button>
+        <button class="modal-button primary" type="submit" data-i18n="createPdf">Створити PDF</button>
+      </div>
+    </form>
+  </div>
+
   <template id="fieldTemplate">
     <label class="field">
       <span class="field-head"><span class="field-label"></span><span class="optional"></span></span>
@@ -714,7 +785,7 @@
 <script>
 'use strict';
 
-const STORAGE_KEY = 'buying-profitability-calculator-v4';
+const STORAGE_KEY = 'buying-profitability-calculator-v5';
 const HASH_KEY = 'scenario';
 
 const I18N = {
@@ -752,6 +823,7 @@ const I18N = {
     insightLoss: 'Для виходу в нуль треба знизити CPA приблизно на {delta} або підняти загальну CR до {cvr}.',
     insightNoSales: 'За цих конверсій фінальний результат майже нульовий. Перевір значення у воронці.',
     dashboardTitle: 'Дашборд воронки', dashboardHint: 'Етапи, просідання та короткі висновки за поточним сценарієм', downloadReport: 'Завантажити PDF', reportGenerating: 'Формую PDF…', reportDownloaded: 'PDF завантажено.', reportError: 'Не вдалося сформувати PDF.',
+    projectNameTitle: 'Назва проєкту', projectNameHint: 'Вона буде в заголовку PDF та назві файлу.', projectNameLabel: 'Назва проєкту', projectNamePlaceholder: 'Наприклад, Meta Ads — Польща', projectNameRequired: 'Введи назву проєкту.', cancel: 'Скасувати', createPdf: 'Створити PDF',
     recommendationsTitle: 'Рекомендації', stageConversion: 'CR етапу', stageDrop: 'Втрата', weakestStage: 'Найбільше просідання', finalConversion: 'Фінальна CR', costPerFinal: 'Ціна фінального результату',
     recommendationWeak: 'Найбільше просідання — між «{from}» та «{to}»: проходить {rate} користувачів.',
     recommendationLoss: 'Для виходу в нуль потрібен CPA не вище {cpa} або загальна CR не нижче {cvr}.',
@@ -795,6 +867,7 @@ const I18N = {
     insightLoss: 'To break even, reduce CPA by about {delta} or increase the overall conversion rate to {cvr}.',
     insightNoSales: 'The current funnel produces almost no final conversions. Recheck the funnel values.',
     dashboardTitle: 'Funnel dashboard', dashboardHint: 'Stages, drop-offs, and short conclusions for the current scenario', downloadReport: 'Download PDF', reportGenerating: 'Generating PDF…', reportDownloaded: 'PDF downloaded.', reportError: 'Could not generate the PDF.',
+    projectNameTitle: 'Project name', projectNameHint: 'It will appear in the PDF heading and file name.', projectNameLabel: 'Project name', projectNamePlaceholder: 'For example, Meta Ads — Poland', projectNameRequired: 'Enter a project name.', cancel: 'Cancel', createPdf: 'Create PDF',
     recommendationsTitle: 'Recommendations', stageConversion: 'Stage CR', stageDrop: 'Drop-off', weakestStage: 'Largest drop-off', finalConversion: 'Final conversion', costPerFinal: 'Cost per final result',
     recommendationWeak: 'The largest drop is between “{from}” and “{to}”: {rate} of users continue.',
     recommendationLoss: 'To break even, keep CPA at or below {cpa}, or increase overall conversion to at least {cvr}.',
@@ -812,30 +885,30 @@ const VERTICALS = {
   ecom: {
     title: 'ecomTitle', desc: 'ecomDesc', basis: true, defaultBasis: 'first',
     money: [f('aov','aov','aovHelp','money'), f('customerLtv','customerLtv','customerLtvHelp','money'), f('margin','margin','marginHelp','percent'), f('fixedCosts','fixedCosts','fixedCostsHelp','money',false)],
-    defaults: {adSpend:1000,cpc:.80,aov:65,customerLtv:95,margin:55,fixedCosts:0},
-    stages: [{nameUk:'Покупка',nameEn:'Purchase',rate:2.5}]
+    defaults: {adSpend:'',cpc:'',aov:'',customerLtv:'',margin:'',fixedCosts:''},
+    stages: [{nameUk:'Покупка',nameEn:'Purchase',rate:''}]
   },
   leadgen: {
     title: 'leadgenTitle', desc: 'leadgenDesc', basis: false, defaultBasis: 'first',
     money: [f('valuePerSale','valuePerSale','valuePerSaleHelp','money'), f('margin','margin','marginHelp','percent'), f('fixedCosts','fixedCosts','fixedCostsHelp','money',false)],
-    defaults: {adSpend:1000,cpc:1.10,valuePerSale:250,margin:100,fixedCosts:0},
-    stages: [{nameUk:'Лід',nameEn:'Lead',rate:12},{nameUk:'Кваліфікований лід',nameEn:'Qualified lead',rate:55},{nameUk:'Продаж',nameEn:'Sale',rate:18}]
+    defaults: {adSpend:'',cpc:'',valuePerSale:'',margin:'',fixedCosts:''},
+    stages: [{nameUk:'Лід',nameEn:'Lead',rate:''},{nameUk:'Кваліфікований лід',nameEn:'Qualified lead',rate:''},{nameUk:'Продаж',nameEn:'Sale',rate:''}]
   },
   edtech: {
     title: 'edtechTitle', desc: 'edtechDesc', basis: false, defaultBasis: 'first',
     money: [f('studentValue','studentValue','studentValueHelp','money'), f('margin','margin','marginHelp','percent'), f('fixedCosts','fixedCosts','fixedCostsHelp','money',false)],
-    defaults: {adSpend:1000,cpc:.95,studentValue:500,margin:70,fixedCosts:0},
-    stages: [{nameUk:'Лід',nameEn:'Lead',rate:10},{nameUk:'Дзвінок / анкета',nameEn:'Call / application',rate:35},{nameUk:'Оплата',nameEn:'Payment',rate:12}]
+    defaults: {adSpend:'',cpc:'',studentValue:'',margin:'',fixedCosts:''},
+    stages: [{nameUk:'Лід',nameEn:'Lead',rate:''},{nameUk:'Дзвінок / анкета',nameEn:'Call / application',rate:''},{nameUk:'Оплата',nameEn:'Payment',rate:''}]
   },
   saas: {
     title: 'saasTitle', desc: 'saasDesc', basis: true, defaultBasis: 'ltv',
     money: [f('monthlyArpu','monthlyArpu','monthlyArpuHelp','money'), f('lifetimeMonths','lifetimeMonths','lifetimeMonthsHelp','number'), f('margin','margin','marginHelp','percent'), f('fixedCosts','fixedCosts','fixedCostsHelp','money',false)],
-    defaults: {adSpend:1000,cpc:1.50,monthlyArpu:39,lifetimeMonths:10,margin:85,fixedCosts:0},
-    stages: [{nameUk:'Signup / trial',nameEn:'Signup / trial',rate:14},{nameUk:'Paid-клієнт',nameEn:'Paid customer',rate:8}]
+    defaults: {adSpend:'',cpc:'',monthlyArpu:'',lifetimeMonths:'',margin:'',fixedCosts:''},
+    stages: [{nameUk:'Signup / trial',nameEn:'Signup / trial',rate:''},{nameUk:'Paid-клієнт',nameEn:'Paid customer',rate:''}]
   }
 };
 
-const state = {language:'uk',currency:'USD',vertical:'ecom',basis:{},values:{},stages:{}};
+const state = {language:'uk',currency:'USD',vertical:'ecom',projectName:'',basis:{},values:{},stages:{}};
 const $ = selector => document.querySelector(selector);
 const dom = {
   currency: $('#currency'), langButtons:[...document.querySelectorAll('[data-lang]')], verticalTabs:$('#verticalTabs'),
@@ -843,7 +916,8 @@ const dom = {
   basisBox:$('#basisBox'), basisMode:$('#basisMode'), basisHint:$('#basisHint'), reset:$('#reset'), copy:$('#copy'), share:$('#share'), actionMessage:$('#actionMessage'),
   statusBox:$('#statusBox'), statusText:$('#statusText'), heroResult:$('#heroResult'), profitValue:$('#profitValue'), roiValue:$('#roiValue'), resultBasis:$('#resultBasis'),
   keyMetrics:$('#keyMetrics'), compareGrid:$('#compareGrid'), funnel:$('#funnel'), advancedGrid:$('#advancedGrid'), insightText:$('#insightText'), fieldTemplate:$('#fieldTemplate'),
-  dashboardFunnel:$('#dashboardFunnel'), dashboardStats:$('#dashboardStats'), recommendations:$('#recommendations'), downloadReport:$('#downloadReport')
+  dashboardFunnel:$('#dashboardFunnel'), dashboardStats:$('#dashboardStats'), recommendations:$('#recommendations'), downloadReport:$('#downloadReport'),
+  reportModal:$('#reportModal'), reportModalBackdrop:$('#reportModalBackdrop'), reportForm:$('#reportForm'), projectNameInput:$('#projectNameInput'), projectNameError:$('#projectNameError'), cancelReport:$('#cancelReport')
 };
 
 function t(key){ return I18N[state.language][key] ?? key; }
@@ -861,7 +935,7 @@ function ensureState(){
       id:s.id||cryptoId(),
       nameUk:String(s.nameUk||s.name||'Новий етап'),
       nameEn:String(s.nameEn||s.name||'New stage'),
-      rate:Number.isFinite(Number(s.rate))?Number(s.rate):0
+      rate:s.rate===''||s.rate===null||s.rate===undefined?'':(Number.isFinite(Number(s.rate))?Number(s.rate):'')
     }));
   });
 }
@@ -878,6 +952,7 @@ function restore(){
       if(['uk','en'].includes(saved.language)) state.language=saved.language;
       if(['USD','EUR','UAH','GBP'].includes(saved.currency)) state.currency=saved.currency;
       if(VERTICALS[saved.vertical]) state.vertical=saved.vertical;
+      if(typeof saved.projectName==='string') state.projectName=saved.projectName.slice(0,80);
       if(saved.basis&&typeof saved.basis==='object') state.basis=saved.basis;
       if(saved.values&&typeof saved.values==='object') state.values=saved.values;
       if(saved.stages&&typeof saved.stages==='object') state.stages=saved.stages;
@@ -889,6 +964,7 @@ function save(){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); }
 function renderTranslations(){
   document.documentElement.lang=state.language;
   document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=t(el.dataset.i18nPlaceholder));
   dom.langButtons.forEach(btn=>btn.classList.toggle('active',btn.dataset.lang===state.language));
   dom.currency.value=state.currency;
 }
@@ -958,8 +1034,12 @@ function renderFunnelEditor(){
       });
     };
     rateInput.oninput=()=>{
-      const val=Number(rateInput.value);
-      stage.rate=Number.isFinite(val)?Math.min(100,Math.max(0,val)):0;
+      if(rateInput.value==='') stage.rate='';
+      else {
+        const val=Number(rateInput.value);
+        stage.rate=Number.isFinite(val)?Math.min(100,Math.max(0,val)):'';
+      }
+      rateInput.parentElement.classList.toggle('invalid',stage.rate==='');
       calculateAndRender(); save();
     };
     row.querySelector('.delete-stage').onclick=()=>{
@@ -1012,7 +1092,16 @@ function validate(){
     const node=document.querySelector(`[data-field="${def.id}"]`);
     if(node&&!validateField(node,def)) ok=false;
   });
-  if(!state.stages[state.vertical]?.length) ok=false;
+  const stages=state.stages[state.vertical]||[];
+  if(!stages.length) ok=false;
+  [...dom.funnelEditor.querySelectorAll('.stage-rate')].forEach((input,index)=>{
+    const stage=stages[index];
+    const raw=stage?.rate;
+    const val=Number(raw);
+    const invalid=raw===''||raw===null||raw===undefined||!Number.isFinite(val)||val<0||val>100;
+    input.parentElement.classList.toggle('invalid',invalid);
+    if(invalid) ok=false;
+  });
   return ok;
 }
 
@@ -1174,23 +1263,120 @@ function getFunnelAnalysis(r){
 function buildRecommendations(r,resultTone){
   const {rows,weakest}=getFunnelAnalysis(r);
   const recs=[];
+  const ua=state.language==='uk';
+  const transition=(from,to)=>`«${from} → ${to}»`;
+  const lastTransition=rows.length>1?rows.at(-1):null;
+  const previousToLast=rows.length>1?rows.at(-2):null;
+
   if(weakest){
-    recs.push(fill(t('recommendationWeak'),{
-      from:rows[weakest.index-1].label,
-      to:weakest.label,
-      rate:pct(weakest.rate)
-    }));
+    const from=rows[weakest.index-1].label;
+    const to=weakest.label;
+    const pair=transition(from,to);
+    const rate=pct(weakest.rate);
+    const first=weakest.index===1;
+    const final=weakest.index===rows.length-1;
+
+    if(state.vertical==='ecom' && (first||final)){
+      recs.push(ua
+        ? `Найслабший перехід — ${pair} (${rate}). Тут спочатку перевір не CPC, а зв’язку креатив → сторінка → чек-аут: чи збігаються ціна й офер, чи одразу видно доставку, повернення та CTA, чи немає зайвих кроків на мобільному. Розбий цю CR по креативах і плейсментах — так стане видно, проблема в якості трафіку чи в сторінці.`
+        : `The weakest transition is ${pair} (${rate}). Check the creative → product page → checkout chain before blaming CPC: price and offer consistency, visible shipping/returns/CTA, and mobile friction. Split this conversion by creative and placement to see whether the issue is traffic quality or the page.`);
+    } else if(first && (state.vertical==='leadgen'||state.vertical==='edtech')){
+      recs.push(ua
+        ? `Найслабший перехід — ${pair} (${rate}). Низький click-to-lead зазвичай означає розрив між обіцянкою в рекламі та формою або лендом. Перевір довжину форми, перший екран, швидкість і CTA, але паралельно дивись якість ліда по кожному креативу та аудиторії — дешевший лід не має сенсу, якщо далі він не кваліфікується.`
+        : `The weakest transition is ${pair} (${rate}). Low click-to-lead usually points to a mismatch between the ad promise and the form or landing page. Check form length, first screen, speed, and CTA, while also comparing downstream lead quality by creative and audience—cheaper leads do not help if they fail qualification.`);
+    } else if(first && state.vertical==='saas'){
+      recs.push(ua
+        ? `Найслабший перехід — ${pair} (${rate}). Перевір, чи креатив приводить саме на ту цінність, яку людина бачить на першому екрані, і скільки тертя є до signup/trial. Окремо порівняй не лише signup rate, а й подальшу активацію по джерелах — канал із дорожчим signup може давати значно більше paid-клієнтів.`
+        : `The weakest transition is ${pair} (${rate}). Check whether the value promised in the creative is immediately visible on the first screen and how much friction exists before signup/trial. Compare not only signup rate but also downstream activation by source—a more expensive signup can still produce far more paid customers.`);
+    } else if(final && (state.vertical==='leadgen'||state.vertical==='edtech')){
+      recs.push(ua
+        ? `Найслабший перехід — ${pair} (${rate}). На цьому етапі проблема вже не обов’язково в закупці кліку. Розклади відмови на причини: не зв’язались, не підходить, дорого, не готовий, відвалився на оплаті. Потім порівняй результат по джерелах і менеджерах — так відділиш слабкий трафік від проблеми в продажі або самому офері.`
+        : `The weakest transition is ${pair} (${rate}). At this point the issue is not necessarily media buying. Break losses into reasons: unreachable, unqualified, price objection, not ready, or payment drop-off. Then compare by source and sales rep to separate weak traffic from a sales-process or offer problem.`);
+    } else if(final && state.vertical==='saas'){
+      recs.push(ua
+        ? `Найслабший перехід — ${pair} (${rate}). Для SaaS це зазвичай питання активації, а не просто paywall. Подивись, яку ключову дію роблять paid-клієнти до оплати, і порівняй її по джерелах. Якщо trial є, перевір onboarding, нагадування та момент показу тарифу — користувач має відчути цінність до прохання заплатити.`
+        : `The weakest transition is ${pair} (${rate}). In SaaS this is usually an activation issue, not just the paywall. Identify the key action paid users complete before upgrading and compare it by source. If there is a trial, review onboarding, reminders, and paywall timing—the user should feel value before being asked to pay.`);
+    } else if(state.vertical==='ecom'){
+      recs.push(ua
+        ? `Найслабший перехід — ${pair} (${rate}). Перевір аналітику події та сам крок: наявність товару, умови доставки, помилки форми, способи оплати й мобільну версію. Якщо просідання різке лише в окремому джерелі, проблема, скоріше за все, у невідповідності трафіку; якщо всюди — у самому кроці воронки.`
+        : `The weakest transition is ${pair} (${rate}). Verify both event tracking and the step itself: stock, shipping terms, form errors, payment methods, and mobile UX. If the drop appears only in one source, traffic mismatch is more likely; if it appears everywhere, the funnel step itself is the issue.`);
+    } else {
+      recs.push(ua
+        ? `Найслабший перехід — ${pair} (${rate}). Не оптимізуй його лише за загальною цифрою: розбий перехід по джерелах, креативах, пристроях і менеджерах. Якщо провал локальний — чисть сегмент; якщо системний — змінюй сам процес, офер або комунікацію на цьому етапі.`
+        : `The weakest transition is ${pair} (${rate}). Do not optimize from the blended number alone: split it by source, creative, device, and sales owner. If the problem is local, cut the segment; if it is systematic, change the process, offer, or communication at this stage.`);
+    }
   }
+
+  const cpcCut=r.cpc>0&&Number.isFinite(r.maxCpc)?Math.max(0,1-Math.max(0,r.maxCpc)/r.cpc):NaN;
+  const cvrLift=r.overallCvr>0&&Number.isFinite(r.requiredCvr)?Math.max(0,r.requiredCvr/r.overallCvr-1):NaN;
   if(resultTone==='negative'){
-    recs.push(fill(t('recommendationLoss'),{cpa:money(Math.max(0,r.maxCpa)),cvr:pct(r.requiredCvr)}));
+    let priority='';
+    if(Number.isFinite(cpcCut)&&Number.isFinite(cvrLift)){
+      priority=cpcCut<=cvrLift
+        ? (ua?`Менший розрив зараз у CPC: ціль — не вище ${money(Math.max(0,r.maxCpc))}.`:`The smaller gap is currently in CPC: target no more than ${money(Math.max(0,r.maxCpc))}.`)
+        : (ua?`Менший розрив зараз у конверсії: загальна CR має зрости до ${pct(r.requiredCvr)}.`:`The smaller gap is currently in conversion: overall CR needs to reach ${pct(r.requiredCvr)}.`);
+    }
+    recs.push(ua
+      ? `Кампанія дає ${money(Math.abs(r.profit))} збитку. До нуля є два вимірювані шляхи: CPC ≤ ${money(Math.max(0,r.maxCpc))} або загальна CR ≥ ${pct(r.requiredCvr)}. ${priority} Другий показник залиш контрольним, щоб економія на трафіку не зіпсувала якість.`
+      : `The campaign is losing ${money(Math.abs(r.profit))}. There are two measurable paths to break-even: CPC ≤ ${money(Math.max(0,r.maxCpc))} or overall CR ≥ ${pct(r.requiredCvr)}. ${priority} Keep the second metric as a control so cheaper traffic does not destroy quality.`);
   } else if(resultTone==='warning'){
-    recs.push(fill(t('recommendationThin'),{gap:pct(Math.max(0,r.safety))}));
+    recs.push(ua
+      ? `Запас до беззбитковості лише ${pct(Math.max(0,r.safety))}. Масштабування зараз ризикове: зафіксуй стоп-ліміт CPA на рівні ${money(Math.max(0,r.maxCpa))} і спочатку підтягни найслабший перехід. Інакше невелике зростання CPC або просідання CR з’їсть увесь плюс.`
+      : `The break-even buffer is only ${pct(Math.max(0,r.safety))}. Scaling is risky now: set a hard CPA limit at ${money(Math.max(0,r.maxCpa))} and improve the weakest transition first. A small CPC increase or CR drop can erase the entire profit.`);
   } else {
-    recs.push(fill(t('recommendationScale'),{gap:pct(Math.max(0,r.safety))}));
+    recs.push(ua
+      ? `Запас до беззбитковості — ${pct(Math.max(0,r.safety))}. Масштабуй бюджет кроками приблизно по 15–20%, але не допускай CPA вище ${money(Math.max(0,r.maxCpa))}. Після кожного кроку дивись не лише загальний CPA, а й чи не погіршився найслабший перехід — саме він першим покаже, що аудиторія почала вигоряти.`
+      : `The break-even buffer is ${pct(Math.max(0,r.safety))}. Scale in roughly 15–20% budget steps, but do not let CPA exceed ${money(Math.max(0,r.maxCpa))}. After each step, watch not only blended CPA but also the weakest transition—it will usually show audience fatigue first.`);
   }
+
+  if((state.vertical==='leadgen'||state.vertical==='edtech')&&lastTransition&&previousToLast&&r.overallCvr>0&&r.requiredCvr>r.overallCvr){
+    const preFinalCvr=r.clicks>0?previousToLast.value/r.clicks:0;
+    const neededFinal=preFinalCvr>0?r.requiredCvr/preFinalCvr:Infinity;
+    if(Number.isFinite(neededFinal)&&neededFinal>lastTransition.rate&&neededFinal<=1){
+      recs.push(ua
+        ? `Без зміни CPC та верхньої частини воронки фінальний перехід ${transition(previousToLast.label,lastTransition.label)} має зрости з ${pct(lastTransition.rate)} до приблизно ${pct(neededFinal)}. Перевір причини відмов, швидкість контакту, кількість повторних дотиків і конверсію окремо по менеджерах — це покаже, чи ціль реальна без зміни офера.`
+        : `Without changing CPC or the upper funnel, the final transition ${transition(previousToLast.label,lastTransition.label)} needs to rise from ${pct(lastTransition.rate)} to about ${pct(neededFinal)}. Review loss reasons, contact speed, follow-up count, and conversion by sales rep to see whether that target is realistic without changing the offer.`);
+    }
+  }
+
+  if(state.vertical==='ecom'){
+    const margin=(Number(r.v.margin)||0)/100;
+    const firstContribution=(Number(r.v.aov)||0)*margin;
+    const ltvContribution=Math.max(Number(r.v.customerLtv)||0,Number(r.v.aov)||0)*margin;
+    if(r.basis==='ltv'&&firstContribution<r.allInCpa&&ltvContribution>=r.allInCpa){
+      recs.push(ua
+        ? `Модель виходить у плюс лише за рахунок LTV: валовий внесок першого замовлення — ${money(firstContribution)}, а all-in CAC — ${money(r.allInCpa)}. Перед масштабуванням перевір, за скільки часу приходять повторні покупки та який відсоток повернень; інакше прибуток на папері може створити касовий розрив.`
+        : `The model is profitable only because of LTV: first-order gross contribution is ${money(firstContribution)}, while all-in CAC is ${money(r.allInCpa)}. Before scaling, verify how quickly repeat purchases arrive and the refund rate; otherwise paper profit can create a cash-flow gap.`);
+    } else if(Number.isFinite(r.breakEvenRoas)&&r.breakEvenRoas>=2.5){
+      recs.push(ua
+        ? `ROAS у нуль — ${ratio(r.breakEvenRoas)}, тому модель сильно залежить від маржі та чека. Тут часто вигідніше підняти валовий дохід з покупки — наборами, upsell, порогом безкоштовної доставки або меншою знижкою — ніж нескінченно полювати за дешевшим CPC.`
+        : `Break-even ROAS is ${ratio(r.breakEvenRoas)}, so the model is highly sensitive to margin and order value. Increasing gross revenue per order through bundles, upsells, free-shipping thresholds, or smaller discounts can be more effective than endlessly chasing cheaper CPC.`);
+    }
+  }
+
+  if(state.vertical==='saas'){
+    if(Number.isFinite(r.ltvCac)&&Number.isFinite(r.payback)&&(r.ltvCac<3||r.payback>6)){
+      recs.push(ua
+        ? `Для SaaS LTV:CAC зараз ${ratio(r.ltvCac)}, payback — ${count(r.payback)} міс. Якщо це нижче 3× або довше 6 місяців, масштабування тиснутиме на кеш. Пріоритет: активація в перші дні, зниження churn, річний план або передплата, і лише потім — більший бюджет.`
+        : `For SaaS, LTV:CAC is ${ratio(r.ltvCac)} and payback is ${count(r.payback)} months. If this is below 3× or longer than 6 months, scaling will pressure cash flow. Prioritize early activation, lower churn, annual plans or prepayment, and only then increase media spend.`);
+    }
+  }
+
   const fixedShare=r.totalCosts>0?r.fixed/r.totalCosts:0;
-  if(fixedShare>=.15) recs.push(fill(t('recommendationCosts'),{share:pct(fixedShare)}));
-  return recs.slice(0,3);
+  if(fixedShare>=.1&&Number.isFinite(r.cpa)&&Number.isFinite(r.allInCpa)){
+    const delta=r.allInCpa-r.cpa;
+    recs.push(ua
+      ? `У рекламному кабінеті CPA — ${money(r.cpa)}, але з командою, fee та сервісами all-in CPA вже ${money(r.allInCpa)} (+${money(Math.max(0,delta))}). Рішення про масштабування приймай по all-in CPA, інакше кабінет виглядатиме прибутковим, а проєкт — ні.`
+      : `Platform CPA is ${money(r.cpa)}, but after team, fees, and tools the all-in CPA is ${money(r.allInCpa)} (+${money(Math.max(0,delta))}). Make scaling decisions from all-in CPA; otherwise the ad account can look profitable while the project is not.`);
+  }
+
+  if(r.sales>0&&r.sales<10){
+    recs.push(ua
+      ? `Фінальних конверсій лише ${count(r.sales)}. На такій вибірці ROI та CR можуть сильно стрибати через 1–2 події. Не перебудовуй воронку після одного дня: спочатку добери хоча б 10–20 фінальних результатів або об’єднай довший період.`
+      : `There are only ${count(r.sales)} final conversions. At this sample size, one or two events can move ROI and CR sharply. Do not rebuild the funnel from a single day—collect at least 10–20 final outcomes or use a longer period first.`);
+  }
+
+  return recs.slice(0,4);
 }
 
 function renderDashboard(r,resultTone){
@@ -1294,7 +1480,7 @@ function buildImagePdf(jpegPages,pixelWidth,pixelHeight){
   return new Blob(chunks,{type:'application/pdf'});
 }
 
-function createReportPdf(r,resultTone){
+function createReportPdf(r,resultTone,projectName){
   const WIDTH=1240, HEIGHT=1754, MARGIN=72, BOTTOM=HEIGHT-72;
   const pages=[];
   let canvas,ctx,y;
@@ -1407,9 +1593,9 @@ function createReportPdf(r,resultTone){
   const statusLabel=t(resultTone==='positive'?'profitable':resultTone==='warning'?'nearLimit':'loss');
   const statusColor=resultTone==='positive'?color.positive:resultTone==='warning'?color.warning:color.negative;
 
-  setFont(15,700); ctx.fillStyle=color.muted; ctx.fillText(t('brandSubtitle').toUpperCase(),MARGIN,y); y+=30;
-  setFont(44,700); ctx.fillStyle=color.text; ctx.fillText(t('reportTitle'),MARGIN,y);
+  setFont(15,700); ctx.fillStyle=color.muted; ctx.fillText(t('reportTitle').toUpperCase(),MARGIN,y); y+=30;
   const statusW=285,statusH=56,statusX=WIDTH-MARGIN-statusW;
+  fittedText(projectName,MARGIN,y,WIDTH-MARGIN*2-statusW-24,44,700,color.text);
   ctx.strokeStyle=color.line; ctx.lineWidth=2; ctx.strokeRect(statusX,y-4,statusW,statusH); ctx.fillStyle=statusColor; ctx.fillRect(statusX,y-4,7,statusH);
   setFont(17,700); drawWrapped(statusLabel,statusX+20,y+12,statusW-34,21,color.text);
   y+=62; setFont(18,400); ctx.fillStyle=color.muted; ctx.fillText(`${t(cfg.title)} · ${basis}`,MARGIN,y); y+=28;
@@ -1455,7 +1641,7 @@ function createReportPdf(r,resultTone){
     const pageCtx=page.ctx;
     pageCtx.strokeStyle=color.line; pageCtx.lineWidth=1; pageCtx.beginPath(); pageCtx.moveTo(MARGIN,HEIGHT-50); pageCtx.lineTo(WIDTH-MARGIN,HEIGHT-50); pageCtx.stroke();
     pageCtx.font='400 13px Arial, sans-serif'; pageCtx.fillStyle=color.muted; pageCtx.textBaseline='top';
-    pageCtx.fillText('Buying Profitability Calculator',MARGIN,HEIGHT-38);
+    pageCtx.fillText(projectName,MARGIN,HEIGHT-38);
     const pageNumber=`${index+1} / ${pages.length}`; pageCtx.textAlign='right'; pageCtx.fillText(pageNumber,WIDTH-MARGIN,HEIGHT-38); pageCtx.textAlign='left';
   });
 
@@ -1463,8 +1649,27 @@ function createReportPdf(r,resultTone){
   return buildImagePdf(jpegPages,WIDTH,HEIGHT);
 }
 
-async function downloadReport(){
+function openReportModal(){
   if(!validate()) return showMessage(t('invalid'),true);
+  dom.projectNameInput.value=state.projectName||'';
+  dom.projectNameError.textContent='';
+  dom.reportModal.hidden=false;
+  document.body.style.overflow='hidden';
+  requestAnimationFrame(()=>{ dom.projectNameInput.focus(); dom.projectNameInput.select(); });
+}
+function closeReportModal(){
+  dom.reportModal.hidden=true;
+  document.body.style.overflow='';
+  dom.projectNameError.textContent='';
+}
+function fileSlug(value){
+  const normalized=String(value).trim().toLowerCase()
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\u0400-\u04ff]+/gi,'-')
+    .replace(/^-+|-+$/g,'');
+  return normalized||'buying-report';
+}
+async function downloadReport(projectName){
   const button=dom.downloadReport;
   try{
     button.disabled=true;
@@ -1472,12 +1677,11 @@ async function downloadReport(){
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     const r=calculate();
     const resultTone=tone(r);
-    const blob=createReportPdf(r,resultTone);
+    const blob=createReportPdf(r,resultTone,projectName);
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
-    const slug=state.vertical.replace(/[^a-z0-9-]/gi,'-');
     a.href=url;
-    a.download=`buying-report-${slug}-${new Date().toISOString().slice(0,10)}.pdf`;
+    a.download=`${fileSlug(projectName)}-${new Date().toISOString().slice(0,10)}.pdf`;
     document.body.append(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1500);
     showMessage(t('reportDownloaded'));
@@ -1488,6 +1692,19 @@ async function downloadReport(){
     button.disabled=false;
     button.textContent=t('downloadReport');
   }
+}
+async function submitReport(event){
+  event.preventDefault();
+  const projectName=dom.projectNameInput.value.trim();
+  if(!projectName){
+    dom.projectNameError.textContent=t('projectNameRequired');
+    dom.projectNameInput.focus();
+    return;
+  }
+  state.projectName=projectName.slice(0,80);
+  save();
+  closeReportModal();
+  await downloadReport(state.projectName);
 }
 
 function buildInsight(r,resultTone){
@@ -1520,7 +1737,8 @@ function copyText(){
 }
 function copyLink(){
   try {
-    const payload=btoa(unescape(encodeURIComponent(JSON.stringify(state)))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
+    const shareState={...state,projectName:''};
+    const payload=btoa(unescape(encodeURIComponent(JSON.stringify(shareState)))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
     const url=new URL(location.href); url.hash=`${HASH_KEY}=${payload}`;
     writeClipboard(url.toString()).then(ok=>showMessage(t(ok?'linkCopied':'copyError'),!ok));
   } catch(_){ showMessage(t('copyError'),true); }
@@ -1541,7 +1759,7 @@ function bind(){
   dom.langButtons.forEach(btn=>btn.onclick=()=>{ state.language=btn.dataset.lang; renderAll(); save(); });
   dom.currency.onchange=e=>{ state.currency=e.target.value; renderFields(); calculateAndRender(); save(); };
   dom.addStage.onclick=()=>{
-    state.stages[state.vertical].push({id:cryptoId(),nameUk:'Новий етап',nameEn:'New stage',rate:10});
+    state.stages[state.vertical].push({id:cryptoId(),nameUk:'Новий етап',nameEn:'New stage',rate:''});
     renderFunnelEditor(); calculateAndRender(); save();
   };
   dom.reset.onclick=()=>{
@@ -1553,7 +1771,12 @@ function bind(){
   };
   dom.copy.onclick=copyText;
   dom.share.onclick=copyLink;
-  dom.downloadReport.onclick=downloadReport;
+  dom.downloadReport.onclick=openReportModal;
+  dom.reportForm.onsubmit=submitReport;
+  dom.cancelReport.onclick=closeReportModal;
+  dom.reportModalBackdrop.onclick=closeReportModal;
+  dom.projectNameInput.oninput=()=>{ dom.projectNameError.textContent=''; };
+  document.addEventListener('keydown',event=>{ if(event.key==='Escape'&&!dom.reportModal.hidden) closeReportModal(); });
 }
 
 restore(); ensureState(); bind(); renderAll();
