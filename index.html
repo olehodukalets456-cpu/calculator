@@ -2,219 +2,139 @@
 <html lang="uk">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="UA/EN калькулятор економіки медіабаїнгу для eCommerce, Lead Generation, EdTech, SaaS та росту аудиторії.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="UA/EN калькулятор економіки медіабаїнгу, масштабування, cash flow, LTV та сценаріїв.">
   <title>Buying Profitability Calculator</title>
-  <link rel="stylesheet" href="assets/styles-1.css">
-  <link rel="stylesheet" href="assets/styles-2.css">
-  <link rel="stylesheet" href="assets/styles-3.css">
-  <link rel="stylesheet" href="assets/brand-v7.css">
+  <link rel="stylesheet" href="assets/v10.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark">BP</div>
-      <div class="brand-copy">
-        <strong>Buying Profitability</strong>
-        <small data-i18n="brandSubtitle">Калькулятор дохідності баїнгу</small>
-      </div>
-    </div>
-    <div class="top-actions">
-      <select id="currency" class="currency-select" aria-label="Currency">
-        <option value="USD">USD</option>
-        <option value="EUR">EUR</option>
-        <option value="UAH">UAH</option>
-        <option value="GBP">GBP</option>
-      </select>
-      <div class="language-switch" aria-label="Language">
-        <button type="button" data-lang="uk" class="active">UA</button>
-        <button type="button" data-lang="en">EN</button>
-      </div>
-    </div>
-  </header>
+<header class="topbar">
+  <div class="brand"><div class="brand-mark">BP</div><div class="brand-copy"><strong>Buying Profitability</strong><small data-i18n="brandSubtitle">Калькулятор дохідності баїнгу</small></div></div>
+  <div class="top-actions">
+    <select id="currency" class="currency-select"><option>USD</option><option>EUR</option><option>UAH</option><option>GBP</option></select>
+    <div class="language-switch"><button type="button" data-lang="uk" class="active">UA</button><button type="button" data-lang="en">EN</button></div>
+  </div>
+</header>
 
-  <main class="page">
-    <section class="intro">
-      <div>
-        <h1 data-i18n="heroTitle">Калькулятор дохідності баїнгу</h1>
-        <p data-i18n="heroText">Введи бюджет, CPC, конверсії воронки та цінність клієнта. Нижче одразу побачиш дохід, прибуток, ROI та беззбиткові ліміти.</p>
+<main class="page">
+  <section class="intro">
+    <div><h1 data-i18n="heroTitle">Калькулятор дохідності баїнгу</h1><p data-i18n="heroText">Порахуй базову економіку, реальні виплати, cash flow, масштабування та кілька сценаріїв в одному місці.</p></div>
+    <div id="statusBox" class="status"><small data-i18n="status">Статус</small><strong id="statusText">—</strong></div>
+  </section>
+
+  <div id="verticalTabs" class="vertical-tabs"></div>
+
+  <div class="workspace">
+    <section class="panel inputs-panel">
+      <div class="panel-heading"><h2 data-i18n="inputTitle">Вхідні дані</h2><button id="reset" class="text-button" type="button" data-i18n="reset">Скинути</button></div>
+
+      <div class="input-section">
+        <div class="input-section-header"><strong data-i18n="trafficData">Трафік</strong><span data-i18n="trafficHint">Бюджет і CPC</span></div>
+        <div id="trafficFields" class="fields"></div>
       </div>
-      <div id="statusBox" class="status warning">
-        <small data-i18n="status">Статус</small>
-        <strong id="statusText">—</strong>
+
+      <div class="input-section">
+        <div class="input-section-header"><strong data-i18n="funnelData">Воронка</strong><span data-i18n="funnelInputHint">Кожен % рахується від попереднього етапу</span></div>
+        <div id="funnelEditor" class="funnel-editor"></div>
+        <button id="addStage" class="add-stage" type="button" data-i18n="addStage">+ Додати етап</button>
       </div>
+
+      <div class="input-section">
+        <div class="input-section-header"><strong data-i18n="moneyData">Економіка</strong><span data-i18n="moneyHint">Дохід і маржа</span></div>
+        <div id="moneyFields" class="fields"></div>
+      </div>
+
+      <div id="basisBox" class="basis-box" hidden><strong data-i18n="calculationBasis">База розрахунку</strong><div id="basisMode" class="segmented"></div><p id="basisHint" class="basis-hint"></p></div>
+
+      <details class="advanced" id="adjustmentsDetails">
+        <summary data-i18n="adjustmentsTitle">Реальні виплати та витрати</summary>
+        <div class="advanced-body"><div id="adjustmentFields" class="fields"></div></div>
+      </details>
+
+      <details class="advanced" id="scalingDetails">
+        <summary data-i18n="scalingTitle">Моделювання масштабування</summary>
+        <div class="advanced-body">
+          <div class="switch-line"><div><strong data-i18n="enableScaling">Увімкнути прогноз масштабування</strong><small data-i18n="enableScalingHelp">CPC зростає, а CR деградує при збільшенні бюджету.</small></div><label class="toggle"><input id="scalingEnabled" type="checkbox"><span></span></label></div>
+          <div id="scalingFields" class="fields"></div>
+        </div>
+      </details>
+
+      <details class="advanced" id="cohortDetails" hidden>
+        <summary data-i18n="cohortTitle">Когортне окуплення</summary>
+        <div class="advanced-body">
+          <div class="switch-line"><div><strong data-i18n="enableCohort">Увімкнути когортний прогноз</strong><small data-i18n="enableCohortHelp">Payback і накопичений результат за місяцями.</small></div><label class="toggle"><input id="cohortEnabled" type="checkbox"><span></span></label></div>
+          <div id="cohortFields" class="fields"></div>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button id="copy" class="action-button" type="button" data-i18n="copySummary">Копіювати підсумок</button>
+        <button id="share" class="action-button" type="button" data-i18n="copyLink">Копіювати сценарій</button>
+        <button id="csvTop" class="action-button" type="button" data-i18n="downloadCsv">CSV</button>
+      </div>
+      <p id="actionMessage" class="action-message"></p>
     </section>
 
-    <div id="verticalTabs" class="vertical-tabs"></div>
-
-    <div class="workspace">
-      <section class="panel inputs-panel">
-        <div class="panel-heading">
-          <h2 data-i18n="inputTitle">Вхідні дані</h2>
-          <button id="reset" class="text-button" type="button" data-i18n="reset">Скинути</button>
+    <section class="results-column">
+      <section class="panel summary-card">
+        <div class="result-head"><h2 data-i18n="buyingResult">Результат баїнгу</h2><span id="resultBasis" class="result-basis">—</span></div>
+        <div id="heroResult" class="hero-result">
+          <div><small id="heroMainLabel" data-i18n="netProfit">Чистий прибуток</small><strong id="profitValue" class="profit-value">—</strong></div>
+          <div class="hero-result-side"><small id="heroSideLabel">ROI</small><strong id="roiValue">—</strong></div>
         </div>
-
-        <div class="input-section">
-          <div class="input-section-header">
-            <strong data-i18n="trafficData">Трафік</strong>
-            <span data-i18n="trafficHint">Бюджет і CPC</span>
-          </div>
-          <div id="trafficFields" class="fields"></div>
-        </div>
-
-        <div class="input-section">
-          <div class="input-section-header">
-            <strong data-i18n="funnelData">Воронка</strong>
-            <span data-i18n="funnelInputHint">Кожен % рахується від попереднього етапу</span>
-          </div>
-          <div id="funnelEditor" class="funnel-editor"></div>
-          <button id="addStage" class="add-stage" type="button" data-i18n="addStage">+ Додати етап</button>
-        </div>
-
-        <div class="input-section">
-          <div class="input-section-header">
-            <strong data-i18n="moneyData">Економіка</strong>
-            <span id="moneyHintText" data-i18n="moneyHint">Дохід і маржа</span>
-          </div>
-          <div id="moneyFields" class="fields"></div>
-        </div>
-
-        <div id="basisBox" class="basis-box" hidden>
-          <strong data-i18n="calculationBasis">На якій базі рахувати результат</strong>
-          <div id="basisMode" class="segmented"></div>
-          <p id="basisHint" class="basis-hint"></p>
-        </div>
-
-        <div class="actions">
-          <button id="copy" class="action-button" type="button" data-i18n="copySummary">Копіювати підсумок</button>
-          <button id="share" class="action-button" type="button" data-i18n="copyLink">Копіювати сценарій</button>
-        </div>
-        <p id="actionMessage" class="action-message"></p>
+        <div id="keyMetrics" class="key-grid"></div>
+        <div class="insight"><span class="insight-icon">i</span><div><strong data-i18n="whatItMeans">Що це означає</strong><p id="insightText">—</p></div></div>
       </section>
 
-      <section class="results-column">
-        <section class="panel summary-card">
-          <div class="result-head">
-            <h2 data-i18n="buyingResult">Результат баїнгу</h2>
-            <span id="resultBasis" class="result-basis">—</span>
-          </div>
-
-          <div id="heroResult" class="hero-result warning">
-            <div>
-              <small id="heroMainLabel" data-i18n="netProfit">Чистий прибуток</small>
-              <strong id="profitValue" class="profit-value">—</strong>
-            </div>
-            <div class="hero-result-side">
-              <small id="heroSideLabel">ROI</small>
-              <strong id="roiValue">—</strong>
-            </div>
-          </div>
-
-          <div id="keyMetrics" class="key-grid"></div>
-
-          <div class="insight">
-            <span class="insight-icon">i</span>
-            <div>
-              <strong data-i18n="whatItMeans">Що це означає</strong>
-              <p id="insightText">—</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-head">
-            <div><h3 id="limitsTitle" data-i18n="buyingLimits">Беззбиткові ліміти</h3><p id="limitsHintText" data-i18n="limitsHint">Інші витрати вже враховані</p></div>
-          </div>
-          <div id="compareGrid" class="compare-grid"></div>
-        </section>
-
-        <section class="card">
-          <div class="card-head">
-            <div><h3 data-i18n="funnelForecast">Прогноз воронки</h3><p data-i18n="funnelForecastHint">Результат за введеним бюджетом</p></div>
-          </div>
-          <div id="funnel" class="funnel"></div>
-        </section>
-
-        <section class="card">
-          <div class="card-head">
-            <div><h3 data-i18n="moreMetrics">Додаткові метрики</h3><p data-i18n="moreMetricsHint">Для перевірки моделі</p></div>
-          </div>
-          <div id="advancedGrid" class="advanced-grid"></div>
-        </section>
-      </section>
-    </div>
-
-    <section id="funnelDashboard" class="card funnel-dashboard">
-      <div class="dashboard-head">
-        <div>
-          <h2 data-i18n="dashboardTitle">Дашборд воронки</h2>
-          <p data-i18n="dashboardHint">Етапи, просідання та короткі висновки за поточним сценарієм</p>
-        </div>
-        <button id="downloadReport" class="download-report" type="button" data-i18n="downloadReport">Завантажити PDF</button>
-      </div>
-      <div class="dashboard-layout">
-        <div id="dashboardFunnel" class="dashboard-funnel"></div>
-        <aside class="dashboard-aside">
-          <div id="dashboardStats" class="dashboard-stats"></div>
-          <div class="recommendation-box">
-            <strong data-i18n="recommendationsTitle">Рекомендації</strong>
-            <div id="recommendations" class="recommendations"></div>
-          </div>
-        </aside>
-      </div>
+      <section class="card"><div class="card-head"><div><h3 data-i18n="buyingLimits">Беззбиткові ліміти</h3><p data-i18n="limitsHint">З урахуванням усіх введених витрат</p></div></div><div id="compareGrid" class="compare-grid"></div></section>
+      <section class="card"><div class="card-head"><div><h3 data-i18n="funnelForecast">Прогноз воронки</h3><p data-i18n="funnelForecastHint">Результат за поточним бюджетом</p></div></div><div id="funnel" class="funnel"></div></section>
+      <section class="card"><div class="card-head"><div><h3 data-i18n="moreMetrics">Додаткові метрики</h3><p data-i18n="moreMetricsHint">Виплати, холд і cash flow</p></div></div><div id="advancedGrid" class="advanced-grid"></div></section>
     </section>
-
-    <div class="footer-note">
-      <strong data-i18n="important">Важливо:</strong>
-      <span data-i18n="disclaimer"> це прогноз на основі введених даних. Повернення, апрув, холди, податки та комісії треба враховувати в маржі або інших витратах.</span>
-    </div>
-  </main>
-
-  <div id="reportModal" class="report-modal" hidden>
-    <div id="reportModalBackdrop" class="report-modal-backdrop"></div>
-    <form id="reportForm" class="report-modal-card" novalidate>
-      <h3 data-i18n="projectNameTitle">Назва проєкту</h3>
-      <p data-i18n="projectNameHint">Вона буде в заголовку PDF та назві файлу.</p>
-      <label class="project-name-field">
-        <span data-i18n="projectNameLabel">Назва проєкту</span>
-        <input id="projectNameInput" type="text" maxlength="80" autocomplete="off" data-i18n-placeholder="projectNamePlaceholder" placeholder="Наприклад, Meta Ads — Польща">
-      </label>
-      <div id="projectNameError" class="project-name-error"></div>
-      <div class="report-modal-actions">
-        <button id="cancelReport" class="modal-button" type="button" data-i18n="cancel">Скасувати</button>
-        <button class="modal-button primary" type="submit" data-i18n="createPdf">Створити PDF</button>
-      </div>
-    </form>
   </div>
 
-  <template id="fieldTemplate">
-    <label class="field">
-      <span class="field-head"><span class="field-label"></span><span class="optional"></span></span>
-      <span class="input-wrap"><span class="prefix"></span><input type="number" inputmode="decimal" step="any"><span class="suffix"></span></span>
-      <span class="field-help"></span>
-      <span class="field-error"></span>
-    </label>
-  </template>
+  <section id="scaleSection" class="card scale-section" hidden>
+    <div class="section-head"><div><h3 data-i18n="scaleForecast">Прогноз масштабування</h3><p data-i18n="scaleForecastHint">Порівняння поточного та збільшеного бюджету</p></div></div>
+    <div id="scaleSummary" class="scale-summary"></div><div id="scaleDelta" class="scale-delta"></div>
+  </section>
 
-  <script src="assets/app-1.js"></script>
-  <script src="assets/app-2.js"></script>
-  <script src="assets/app-3.js"></script>
-  <script src="assets/app-4.js"></script>
-  <script src="assets/app-5.js"></script>
-  <script src="assets/app-6.js"></script>
-  <script src="assets/app-7.js"></script>
-  <script src="assets/app-8.js"></script>
-  <script src="assets/app-9.js"></script>
-  <script src="assets/app-10.js"></script>
-  <script src="assets/app-11.js"></script>
-  <script src="assets/app-12.js"></script>
-  <script src="assets/app-13.js"></script>
-  <script src="assets/brand-v7-1.js"></script>
-  <script src="assets/brand-v7-2.js"></script>
-  <script src="assets/brand-v7-3.js"></script>
-  <script src="assets/brand-v7-4.js"></script>
-  <script src="assets/brand-v7-5.js"></script>
-  <script src="assets/brand-v7-6.js"></script>
-  <script src="assets/brand-v7-7.js"></script>
+  <section id="cohortSection" class="card cohort-section" hidden>
+    <div class="section-head"><div><h3 data-i18n="cohortForecast">Когортне окуплення</h3><p data-i18n="cohortForecastHint">Накопичений gross profit і payback за місяцями</p></div></div>
+    <div id="cohortSummary" class="scale-summary"></div><div id="cohortChart" class="cohort-chart"></div><div id="cohortTable"></div>
+  </section>
+
+  <section class="card dashboard-section">
+    <div class="dashboard-head">
+      <div><h2 data-i18n="dashboardTitle">Дашборд воронки</h2><p data-i18n="dashboardHint">Етапи, просідання та профільні висновки</p></div>
+      <div class="export-actions"><button id="downloadReport" class="download-report" type="button" data-i18n="downloadReport">PDF</button><button id="downloadCsv" class="action-button" type="button" data-i18n="downloadCsv">CSV</button><button id="googleSheets" class="action-button" type="button" data-i18n="googleSheets">Google Sheets</button></div>
+    </div>
+    <div class="dashboard-layout"><div id="dashboardFunnel" class="dashboard-funnel"></div><aside><div id="dashboardStats" class="dashboard-stats"></div><div class="recommendation-box"><strong data-i18n="recommendationsTitle">Рекомендації</strong><div id="recommendations" class="recommendations"></div></div></aside></div>
+  </section>
+
+  <section class="card scenario-section">
+    <div class="section-head"><div><h3 data-i18n="scenariosTitle">Порівняння сценаріїв</h3><p data-i18n="scenariosHint">Збережи до трьох варіантів і порівняй їх поруч</p></div></div>
+    <div id="scenarioSlots" class="scenario-slots"></div><div id="scenarioComparison"></div>
+  </section>
+
+  <div class="footer-note"><strong data-i18n="important">Важливо:</strong><span data-i18n="disclaimer"> модель залежить від якості введених даних. Approve, refund, комісії та холд рахуються окремо, щоб паперовий ROI не плутався з реальним cash flow.</span></div>
+</main>
+
+<div id="reportModal" class="report-modal" hidden>
+  <div id="reportModalBackdrop" class="report-modal-backdrop"></div>
+  <form id="reportForm" class="report-modal-card">
+    <h3 data-i18n="projectNameTitle">Назва проєкту</h3><p data-i18n="projectNameHint">Назва піде в PDF і назву файла.</p>
+    <label class="project-name-field"><span data-i18n="projectNameLabel">Назва проєкту</span><input id="projectNameInput" type="text" maxlength="80" autocomplete="off" placeholder="Наприклад, GEO / продукт / період"></label>
+    <div id="projectNameError" class="project-name-error"></div>
+    <div class="report-modal-actions"><button id="cancelReport" class="modal-button" type="button" data-i18n="cancel">Скасувати</button><button class="modal-button primary" type="submit" data-i18n="createPdf">Створити PDF</button></div>
+  </form>
+</div>
+
+<template id="fieldTemplate"><label class="field"><span class="field-head"><span class="field-label"></span><span class="optional"></span></span><span class="input-wrap"><span class="prefix"></span><input type="number" inputmode="decimal" step="any"><span class="suffix"></span></span><span class="field-help"></span><span class="field-error"></span></label></template>
+<div id="reportRender" class="report-render" aria-hidden="true"></div>
+
+<script src="assets/v10-1.js"></script>
+<script src="assets/v10-2.js"></script>
+<script src="assets/v10-3.js"></script>
 </body>
 </html>
