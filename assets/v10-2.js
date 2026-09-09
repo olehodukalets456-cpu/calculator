@@ -69,9 +69,9 @@ function findMaxScaleBudget(baseSpend,cpc,rates,vals){
 function computeCohort(base,vals){
  const months=clamp(Math.round(n(vals.projectionMonths)),1,36),churn=clamp(n(vals.churnRate),0,100)/100;
  const monthlyValue=state.vertical==='saas'?n(vals.monthlyArpu):n(vals.monthlyStudentValue);
- if(monthlyValue<=0)return null;
+ if(!Number.isFinite(monthlyValue)||monthlyValue<0)return null;
  const margin=clamp(n(vals.margin),0,100)/100,payment=clamp(n(vals.paymentFee),0,100)/100,tax=clamp(n(vals.taxRate),0,100)/100;
- const unitMonthlyContribution=monthlyValue*Math.max(0,margin-payment-tax);
+ const unitMonthlyContribution=monthlyValue*(margin-payment-tax);
  let active=base.paidFinal,cumulative=0,payback=null;const rows=[];
  for(let m=1;m<=months;m++){
   const gp=active*unitMonthlyContribution;cumulative+=gp;

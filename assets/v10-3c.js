@@ -12,15 +12,21 @@ function reportHtml(project,r,recs){
  ${state.scenarios.filter(Boolean).length?`<h2>${t('reportScenarios')}</h2><table class="report-table"><tr><th>${t('scenariosTitle')}</th><th>${t('budget')}</th><th>${t('allInCpa')}</th><th>${t('profit')}</th><th>ROI</th></tr>${state.scenarios.filter(Boolean).map(s=>`<tr><td>${esc(s.name)}</td><td>${moneyScenario(s.result.spend,s.currency)}</td><td>${moneyScenario(s.result.allInCpa,s.currency)}</td><td>${moneyScenario(s.result.profit,s.currency)}</td><td>${pct(s.result.roi)}</td></tr>`).join('')}</table>`:''}`;
 }
 async function createPdf(project){
- const r=calculate();let weakest={i:0,drop:-1};r.funnel.slice(1).forEach((s,i)=>{if(s.drop>weakest.drop)weakest={i:i+1,drop:s.drop}});const recs=buildRecommendations(r,weakest.i);
+ if(!validate(true))throw new Error(t('invalid'));
+ const r=calculate(),recs=buildRecommendations(r,greatestDrop(r));
  dom.reportRender.innerHTML=reportHtml(project,r,recs);
  await new Promise(res=>requestAnimationFrame(()=>requestAnimationFrame(res)));
  if(window.html2canvas&&window.jspdf?.jsPDF){
   const canvas=await html2canvas(dom.reportRender,{scale:1.5,backgroundColor:'#ffffff',useCORS:true,logging:false});
   const {jsPDF}=window.jspdf,pdf=new jsPDF('p','mm','a4'),pageW=210,pageH=297,margin=8,imgW=pageW-margin*2,pxPerMm=canvas.width/imgW,pagePx=(pageH-margin*2)*pxPerMm;
+  const top=dom.reportRender.getBoundingClientRect().top;
+  const protectedBlocks=[...dom.reportRender.querySelectorAll('tr,.report-box,.report-rec,h1,h2')].map(el=>{const rect=el.getBoundingClientRect();return {top:(rect.top-top)*1.5,bottom:(rect.bottom-top)*1.5}});
   let offset=0,page=0;
   while(offset<canvas.height){
-   const slice=document.createElement('canvas');slice.width=canvas.width;slice.height=Math.min(pagePx,canvas.height-offset);
+   let end=Math.min(offset+Math.floor(pagePx),canvas.height);
+   const crossing=protectedBlocks.filter(block=>block.top<end&&block.bottom>end&&block.top>offset+20);
+   if(crossing.length)end=Math.floor(Math.min(...crossing.map(block=>block.top)));
+   const slice=document.createElement('canvas');slice.width=canvas.width;slice.height=Math.max(1,end-offset);
    slice.getContext('2d').drawImage(canvas,0,offset,canvas.width,slice.height,0,0,canvas.width,slice.height);
    if(page++)pdf.addPage();
    pdf.addImage(slice.toDataURL('image/jpeg',.9),'JPEG',margin,margin,imgW,slice.height/pxPerMm);
@@ -42,10 +48,11 @@ async function submitReport(e){
    }
    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);showMessage(t('reportDownloaded'));
   }else{
-   const win=window.open('','_blank');win.document.write(`<html><head><title>${esc(project)}</title><style>body{font-family:Arial;padding:24px;max-width:900px;margin:auto}.report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.report-box{border:1px solid #ddd;padding:8px}.report-table{width:100%;border-collapse:collapse}.report-table td,.report-table th{border:1px solid #ddd;padding:6px}.report-rec{padding:8px;margin:6px 0;background:#f4f4f4}</style></head><body>${dom.reportRender.innerHTML}<script>setTimeout(()=>window.print(),300)<\/script></body></html>`);win.document.close();showMessage(t('reportOpened'));
+   document.body.classList.add('printing-report');
+   try{window.print();showMessage(t('reportOpened'))}finally{document.body.classList.remove('printing-report')}
   }
  }catch(err){console.error(err);showMessage(t('reportError'),true)}
- finally{dom.downloadReport.disabled=false;dom.downloadReport.textContent=old}
+ finally{dom.downloadReport.disabled=false;dom.downloadReport.textContent=t('downloadReport');dom.reportRender.innerHTML=''}
 }
 
 function resetCurrent(){
@@ -59,4 +66,4 @@ dom.scalingEnabled.onchange=()=>{state.scalingEnabled=dom.scalingEnabled.checked
 dom.cohortEnabled.onchange=()=>{state.cohortEnabled=dom.cohortEnabled.checked;save();renderFields();calculateAndRender()};
 dom.downloadReport.onclick=openReportModal;dom.cancelReport.onclick=closeReportModal;dom.reportModalBackdrop.onclick=closeReportModal;dom.reportForm.onsubmit=submitReport;
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!dom.reportModal.hidden)closeReportModal()});
-load();renderAll();
+// Bootstrap runs after all traffic-mode functions have been installed.

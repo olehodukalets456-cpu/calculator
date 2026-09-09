@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="UA/EN калькулятор економіки медіабаїнгу, масштабування, cash flow, LTV та сценаріїв.">
   <title>Buying Profitability Calculator</title>
-  <link rel="stylesheet" href="assets/v10.css">
-  <link rel="stylesheet" href="assets/v11-traffic.css">
+  <link rel="stylesheet" href="assets/v10.css?v=20260909">
+  <link rel="stylesheet" href="assets/v11-traffic.css?v=20260909">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -75,7 +75,7 @@
         <button id="share" class="action-button" type="button" data-i18n="copyLink">Копіювати сценарій</button>
         <button id="csvTop" class="action-button" type="button" data-i18n="downloadCsv">CSV</button>
       </div>
-      <p id="actionMessage" class="action-message"></p>
+      <p role="status" aria-live="polite" id="actionMessage" class="action-message"></p>
     </section>
 
     <section class="results-column">
@@ -123,8 +123,8 @@
 
 <div id="reportModal" class="report-modal" hidden>
   <div id="reportModalBackdrop" class="report-modal-backdrop"></div>
-  <form id="reportForm" class="report-modal-card">
-    <h3 data-i18n="projectNameTitle">Назва проєкту</h3><p data-i18n="projectNameHint">Назва піде в PDF і назву файла.</p>
+  <form role="dialog" aria-modal="true" aria-labelledby="reportTitle" id="reportForm" class="report-modal-card">
+    <h3 id="reportTitle" data-i18n="projectNameTitle">Назва проєкту</h3><p data-i18n="projectNameHint">Назва піде в PDF і назву файла.</p>
     <label class="project-name-field"><span data-i18n="projectNameLabel">Назва проєкту</span><input id="projectNameInput" type="text" maxlength="80" autocomplete="off" placeholder="Наприклад, GEO / продукт / період"></label>
     <div id="projectNameError" class="project-name-error"></div>
     <div class="report-modal-actions"><button id="cancelReport" class="modal-button" type="button" data-i18n="cancel">Скасувати</button><button class="modal-button primary" type="submit" data-i18n="createPdf">Створити PDF</button></div>
@@ -134,16 +134,16 @@
 <template id="fieldTemplate"><label class="field"><span class="field-head"><span class="field-label"></span><span class="optional"></span></span><span class="input-wrap"><span class="prefix"></span><input type="number" inputmode="decimal" step="any"><span class="suffix"></span></span><span class="field-help"></span><span class="field-error"></span></label></template>
 <div id="reportRender" class="report-render" aria-hidden="true"></div>
 
-<script src="assets/v10-1a.js"></script>
-<script src="assets/v10-1b.js"></script>
-<script src="assets/v10-1c.js"></script>
-<script src="assets/v10-2.js"></script>
-<script src="assets/v10-3a.js"></script>
-<script src="assets/v10-3b.js"></script>
-<script src="assets/v10-3c.js"></script>
-<script src="assets/v11-traffic-1.js"></script>
-<script src="assets/v11-traffic-2.js"></script>
-<script src="assets/v11-traffic-3.js"></script>
-<script src="assets/v11-traffic-4.js"></script>
+<script src="assets/v10-1a.js?v=20260909"></script>
+<script src="assets/v10-1b.js?v=20260909"></script>
+<script src="assets/v10-1c.js?v=20260909"></script>
+<script src="assets/v10-2.js?v=20260909"></script>
+<script src="assets/v10-3a.js?v=20260909"></script>
+<script src="assets/v10-3b.js?v=20260909"></script>
+<script src="assets/v10-3c.js?v=20260909"></script>
+<script src="assets/v11-traffic-1.js?v=20260909"></script>
+<script src="assets/v11-traffic-2.js?v=20260909"></script>
+<script src="assets/v11-traffic-3.js?v=20260909"></script>
+<script src="assets/v11-traffic-4.js?v=20260909"></script>
 </body>
 </html>

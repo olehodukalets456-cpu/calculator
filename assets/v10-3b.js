@@ -27,20 +27,25 @@ function renderScenarios(){
  ];
  dom.scenarioComparison.innerHTML=`<table class="scenario-table"><thead><tr><th>${t('scenariosTitle')}</th>${active.map(x=>`<th>${esc(x.name)}</th>`).join('')}</tr></thead><tbody>${rows.map(([lab,fn])=>`<tr><td>${esc(lab)}</td>${active.map(x=>`<td>${esc(fn(x))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
-function moneyScenario(v,c){const sym=CURR[c]||c;return Number.isFinite(v)?`${v<0?'-':''}${sym}${Math.abs(v).toLocaleString(undefined,{maximumFractionDigits:2})}`:'—'}
+function moneyScenario(v,c){const sym=CURR[c]||c;return Number.isFinite(v)?`${v<0?'-':''}${sym}${Math.abs(v).toLocaleString(undefined,{maximumFractionDigits:Math.abs(v)>0&&Math.abs(v)<.01?8:2})}`:'—'}
 function saveScenario(i){
  if(!validate(true))return showMessage(t('invalid'),true);
  const name=dom.scenarioSlots.querySelector(`[data-slot-name="${i}"]`).value.trim()||t(`scenario${i+1}`);
  const r=calculate();
- state.scenarios[i]={name,currency:state.currency,vertical:state.vertical,result:JSON.parse(JSON.stringify(r)),savedAt:new Date().toISOString()};
+ state.scenarioNames[i]=name;
+ state.scenarios[i]={version:12,name,currency:state.currency,vertical:state.vertical,result:JSON.parse(JSON.stringify(r)),savedAt:new Date().toISOString()};
  save();renderScenarios();showMessage(t('scenarioSaved'));
 }
 
-function calculateAndRender(){const r=calculate();renderResults(r)}
+function calculateAndRender(){const r=calculate();renderResults(r);if(document.querySelector('.field.invalid,.stage-rate-wrap.invalid'))validate(true)}
 function renderAll(){ensureState();applyTranslations();renderVerticals();renderFields();calculateAndRender()}
 
 function showMessage(msg,error=false){dom.actionMessage.style.color=error?'var(--negative)':'var(--positive)';dom.actionMessage.textContent=msg;clearTimeout(showMessage._t);showMessage._t=setTimeout(()=>dom.actionMessage.textContent='',3500)}
-async function copyText(text){try{await navigator.clipboard.writeText(text);return true}catch{const ta=document.createElement('textarea');ta.value=text;document.body.append(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok}}
+async function copyText(text){
+ try{await navigator.clipboard.writeText(text);return true}catch{}
+ const focus=document.activeElement,ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px;top:0';document.body.append(ta);
+ try{ta.select();return !!document.execCommand('copy')}catch{return false}finally{ta.remove();focus?.focus()}
+}
 function summaryText(){
  const r=calculate(),cfg=VERTICALS[state.vertical];
  return [`${t(cfg.title)}`,`${t('budget')}: ${money(r.spend)}`,`${t('cpc')}: ${money(r.cpc)}`,`${t('paidFinal')}: ${count(r.paidFinal)}`,`${t('allInCpa')}: ${money(r.allInCpa)}`,`${t('revenue')}: ${money(r.grossRevenue)}`,`${t('profit')}: ${money(r.profit)}`,`ROI: ${pct(r.roi)}`,`${t('maxCpc')}: ${money(r.maxCpc)}`].join('\n');
@@ -61,10 +66,16 @@ function csvRows(){
  state.scenarios.filter(Boolean).forEach(s=>[['Scenario',`${s.name} - ${t('budget')}`,s.result.spend],['Scenario',`${s.name} - ${t('profit')}`,s.result.profit],['Scenario',`${s.name} - ROI`,s.result.roi]].forEach(x=>rows.push(x)));
  return rows;
 }
-function csvText(delim=','){return csvRows().map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(delim)).join('\n')}
-function downloadCsv(){if(!validate(true))return showMessage(t('invalid'),true);const blob=new Blob(['\uFEFF'+csvText()],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`buying-report-${new Date().toISOString().slice(0,10)}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);showMessage(t('csvDownloaded'))}
-async function openSheets(){if(!validate(true))return showMessage(t('invalid'),true);const win=window.open('about:blank','_blank');const tsv=csvRows().map(r=>r.join('\t')).join('\n');const ok=await copyText(tsv);if(ok){if(win)win.location='https://sheets.new';else location.href='https://sheets.new';showMessage(t('sheetsCopied'))}else{if(win)win.close();showMessage(t('copyError'),true)}}
+function sheetCell(value){
+ if(typeof value==='number')return Number.isFinite(value)?String(value):'';
+ const text=String(value??'');return /^[\s]*[=+@-]/.test(text)?"'"+text:text;
+}
+function csvText(delim=','){return csvRows().map(row=>row.map(value=>`"${sheetCell(value).replace(/"/g,'""')}"`).join(delim)).join('\r\n')}
+function downloadCsv(){if(!validate(true))return showMessage(t('invalid'),true);const blob=new Blob(['\uFEFF'+csvText()],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`buying-report-${new Date().toISOString().slice(0,10)}.csv`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);showMessage(t('csvDownloaded'))}
+async function openSheets(){if(!validate(true))return showMessage(t('invalid'),true);const win=window.open('about:blank','_blank');const tsv=csvRows().map(row=>row.map(value=>sheetCell(value).replace(/[\t\r\n]+/g,' ')).join('\t')).join('\n');const ok=await copyText(tsv);if(ok){if(win)win.location='https://sheets.new';else location.href='https://sheets.new';showMessage(t('sheetsCopied'))}else{if(win)win.close();showMessage(t('copyError'),true)}}
 
-function openReportModal(){if(!validate(true))return showMessage(t('invalid'),true);dom.projectNameInput.value='';dom.projectNameError.textContent='';dom.reportModal.hidden=false;document.body.style.overflow='hidden';setTimeout(()=>dom.projectNameInput.focus(),50)}
-function closeReportModal(){dom.reportModal.hidden=true;document.body.style.overflow='';dom.projectNameError.textContent=''}
+function openReportModal(){if(!validate(true))return showMessage(t('invalid'),true);dom.projectNameInput.value='';dom.projectNameError.textContent='';openReportModal.focus=document.activeElement;dom.reportModal.hidden=false;document.querySelector('main').inert=true;document.querySelector('header').inert=true;document.body.style.overflow='hidden';setTimeout(()=>dom.projectNameInput.focus(),50)}
+function closeReportModal(){dom.reportModal.hidden=true;document.querySelector('main').inert=false;document.querySelector('header').inert=false;document.body.style.overflow='';dom.projectNameError.textContent='';openReportModal.focus?.focus()}
 function fileSlug(v){return String(v).trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\u0400-\u04ff]+/gi,'-').replace(/^-+|-+$/g,'')||'buying-report'}
+
+window.addEventListener('keydown',event=>{if(event.key!=='Tab'||dom.reportModal.hidden)return;const controls=[...dom.reportForm.querySelectorAll('input,button')].filter(el=>!el.disabled);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}});

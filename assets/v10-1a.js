@@ -3,7 +3,9 @@
 const STORAGE_KEY='leadsuni-buying-calculator-v10';
 const HASH_KEY='scenario';
 const CURR={USD:'$',EUR:'€',UAH:'₴',GBP:'£'};
-const n=v=>{const x=Number(String(v??'').replace(',','.'));return Number.isFinite(x)?x:0};
+const isBlank=v=>v==null||String(v).trim()==='';
+const parseNumeric=v=>{if(isBlank(v))return NaN;const raw=String(v).trim().replace(',','.');return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw)?Number(raw):NaN};
+const n=v=>isBlank(v)?0:parseNumeric(v);
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const uid=()=>Math.random().toString(36).slice(2,9);
@@ -71,4 +73,3 @@ en:{
  saveScenario:'Save current',deleteScenario:'Delete',scenario1:'Scenario 1',scenario2:'Scenario 2',scenario3:'Scenario 3',scenarioSaved:'Scenario saved.',noScenarios:'Save at least one scenario to compare.',
  reportTitle:'Buying economics report',reportInputs:'Inputs',reportResults:'Results',reportFunnel:'Funnel',reportAdjustments:'Adjustments',reportScaling:'Scaling',reportCohort:'Cohort',reportScenarios:'Scenarios',reportRecommendations:'Recommendations',reportGenerated:'Generated'
 }};
-
