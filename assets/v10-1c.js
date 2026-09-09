@@ -39,7 +39,7 @@ function renderFunnelEditor(){
   dom.funnelEditor.append(row);
  });
 }
-function addStage(){state.stages[state.vertical].push({id:uid(),nameUk:t('newStage'),nameEn:I18N.en.newStage,rate:''});save();renderFunnelEditor();calculateAndRender()}
+function addStage(){if(currentStages().length>=20)return;currentStages().push({id:uid(),nameUk:I18N.uk.newStage,nameEn:I18N.en.newStage,rate:''});save();renderFields();calculateAndRender()}
 
 function valuePerResult(vals){
  const cfg=VERTICALS[state.vertical],basis=state.basis[state.vertical];

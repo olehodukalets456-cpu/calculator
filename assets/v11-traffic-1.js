@@ -53,8 +53,8 @@ Object.assign(I18N.en,{
 const v10EnsureState=ensureState;
 ensureState=function(){
   v10EnsureState();
-  if(!state.trafficMode||typeof state.trafficMode!=='object')state.trafficMode={};
-  if(!state.anchorStage||typeof state.anchorStage!=='object')state.anchorStage={};
+  if(!state.trafficMode||typeof state.trafficMode!=='object'||Array.isArray(state.trafficMode))state.trafficMode={};
+  if(!state.anchorStage||typeof state.anchorStage!=='object'||Array.isArray(state.anchorStage))state.anchorStage={};
   Object.keys(VERTICALS).forEach(key=>{
     if(!['cpc','stage'].includes(state.trafficMode[key]))state.trafficMode[key]='cpc';
     const stages=state.stages[key]||[];
@@ -121,11 +121,14 @@ renderFields=function(){
   dom.scalingFields.innerHTML='';[
     field('targetBudget','targetBudget','targetBudgetHelp','money'),field('cpcGrowth','trafficCostGrowth','trafficCostGrowthHelp','percent'),field('crDrop','crDrop','crDropHelp','percent')
   ].forEach(def=>dom.scalingFields.append(fieldHtml(def,'scaling')));
+  dom.scalingFields.querySelectorAll('input').forEach(input=>input.disabled=!state.scalingEnabled);
   dom.scalingFields.style.opacity=state.scalingEnabled?'1':'.45';dom.scalingFields.style.pointerEvents=state.scalingEnabled?'auto':'none';
   dom.cohortDetails.hidden=!cfg.cohort;dom.cohortEnabled.checked=!!state.cohortEnabled;
   dom.cohortFields.innerHTML='';
   if(cfg.cohort)[field('churnRate','churnRate','churnRateHelp','percent'),field('projectionMonths','projectionMonths','projectionMonthsHelp','number')].forEach(def=>dom.cohortFields.append(fieldHtml(def,'cohort')));
+  dom.cohortFields.querySelectorAll('input').forEach(input=>input.disabled=!state.cohortEnabled);
   dom.cohortFields.style.opacity=state.cohortEnabled?'1':'.45';dom.cohortFields.style.pointerEvents=state.cohortEnabled?'auto':'none';
+  dom.addStage.disabled=currentStages().length>=20;
   renderFunnelEditor();renderBasis();
 };
 
@@ -142,9 +145,13 @@ renderFunnelEditor=function(){
     else src=`${L(stages[i-1].nameUk,stages[i-1].nameEn)} →`;
     row.innerHTML=`<span class="stage-source">${esc(src)}</span><input class="stage-name" value="${esc(L(s.nameUk,s.nameEn))}"><span class="stage-rate-wrap ${disabled?'disabled':''}"><input class="stage-rate" type="number" inputmode="decimal" step="any" value="${esc(s.rate)}" ${disabled?'disabled':''}><span>${disabled?'—':'%'}</span></span><button class="delete-stage" type="button" ${stages.length===1?'disabled':''}>×</button>`;
     const name=row.querySelector('.stage-name'),rate=row.querySelector('.stage-rate'),del=row.querySelector('.delete-stage');
+    name.maxLength=120;name.setAttribute('aria-label',L('Назва етапу','Stage name')+' '+(i+1));
+    rate.min='0';rate.max='100';rate.setAttribute('aria-label',t('stageConversion')+' '+(i+1));
+    del.setAttribute('aria-label',t('deleteStage')+' '+(i+1));
     name.oninput=()=>{
       if(state.lang==='uk')s.nameUk=name.value;else s.nameEn=name.value;
       const option=document.querySelector(`#anchorStageSelect option[value="${CSS.escape(s.id)}"]`);if(option)option.textContent=name.value;
+      if(dom.funnelEditor.children[i+1])dom.funnelEditor.children[i+1].querySelector('.stage-source').textContent=name.value+' →';
       save();calculateAndRender();
     };
     if(!disabled)rate.oninput=()=>{s.rate=rate.value;save();calculateAndRender()};
@@ -162,3 +169,50 @@ function flexibleInputs(){
   return {vals,mode,aIndex,spend:n(vals.adSpend),cpc:mode==='cpc'?n(vals.cpc):NaN,anchorCost:mode==='stage'?n(vals.anchorCost):NaN,rates:rawRates(),stages:currentStages()};
 }
 
+Object.assign(I18N.uk,{
+ invalid:'Заповни обов’язкові поля та перевір значення',numericOverflow:'Значення завеликі або вартість трафіку замала для надійного розрахунку.',
+ storageError:'Автозбереження недоступне. Збережи сценарій посиланням або експортуй звіт.',scenarioError:'Не вдалося відкрити сценарій із посилання.',
+ revenue:'Прогнозна виручка',profit:'Прибуток моделі',netProfit:'Прибуток моделі',totalCosts:'Бюджет + агентські + фіксовані',
+ cashGap:'Витрати залучення до виплати',paybackDate:'Сьогодні + строк холду',
+ limitsHint:'За незмінного бюджету, CR, маржі та фіксованих витрат',
+ crDropHelp:'Падіння загальної CR активної воронки за подвоєння бюджету, розподілене між її етапами.',
+ fixedCostsHelp:'Витрати за той самий період, що й бюджет. У масштабуванні та когорті враховуються один раз.',
+ holdDaysHelp:'Затримка виплати. Сьогодні використовується лише як умовна дата початку холду.',
+ activeRateHelp:'Частка активної аудиторії через 30 днів. Порожньо = невідомо, 0% = жодного активного.',
+ projectionMonthsHelp:'Ціле число від 1 до 36 місяців.',
+ cohortForecastHint:'Внесок після собівартості, платіжних комісій і податків; без графіка фактичних виплат.',
+ monthlyGrossProfit:'Внесок за місяць',cumulativeGrossProfit:'Накопичений внесок',ltv3:'Чистий внесок / клієнт, 3 міс.',ltv6:'Чистий внесок / клієнт, 6 міс.',ltv12:'Чистий внесок / клієнт, 12 міс.',
+ weakestStage:'Найбільша втрата за кількістю',noScaleLimit:'Модель не задає верхньої межі',noProfitableScale:'Немає беззбиткового бюджету вище поточного',
+ withinTarget:'Ціну результату втримано',aboveTarget:'Ціна результату вища за ціль',atBreakEven:'Модель на межі беззбитковості',
+ noRevenueValue:'Цінність результату не задана: оцінюємо ціну залучення, прибуток і ROI невідомі.',
+ noPaidResults:'Оплачених результатів немає. Витрати залишаються, CPA поки не визначений.',
+ noUnitMargin:'Внесок з результату нульовий або від’ємний. Зниження CPC саме по собі не зробить модель прибутковою.',
+ impossibleCvr:'Потрібна CR перевищує 100%. За поточних витрат, ціни та маржі сама воронка не виведе модель у нуль.',
+ snapshotHint:'Сценарії зберігають результат на момент запису. Різні валюти не конвертуються.',
+ currencyHelp:'Валюта введених сум. Зміна валюти не перераховує числа за курсом.',
+ cashAssumption:'Показано лише рекламний бюджет, агентські та фіксовані витрати на введений обсяг. Без щоденного spend, строків витрат і графіка надходжень резерв для безперервного заливу невідомий.',
+ cohortAssumption:'Когорта містить лише залучених клієнтів без нових покупців; churn починається після першого місяця. Lifetime у головній моделі та churn у когорті — окремі припущення. Холд у payback не враховано.',
+ disclaimer:' прогноз залежить від введених припущень. Маржа враховує собівартість; платіжні комісії й податки віднімаються від виручки, агентська комісія — від бюджету. LTV не означає кошти на рахунку.'
+});
+Object.assign(I18N.en,{
+ invalid:'Complete required inputs and check the values',numericOverflow:'Values are too large or traffic cost is too small for a reliable calculation.',
+ storageError:'Autosave is unavailable. Copy a scenario link or export the report.',scenarioError:'Could not open the scenario link.',
+ revenue:'Forecast revenue',profit:'Model profit',netProfit:'Model profit',totalCosts:'Ad spend + agency + fixed costs',
+ cashGap:'Acquisition costs before payout',paybackDate:'Today + hold duration',limitsHint:'At unchanged budget, CR, margin and fixed costs',
+ crDropHelp:'Decline in the overall active funnel CR per budget doubling, distributed across its stages.',
+ fixedCostsHelp:'Costs for the same period as ad spend. Counted once in scaling and cohort models.',
+ holdDaysHelp:'Payout delay. Today is used only as an assumed start of the hold.',activeRateHelp:'Audience still active after 30 days. Blank = unknown; 0% = no active users.',
+ projectionMonthsHelp:'An integer from 1 to 36 months.',cohortForecastHint:'Contribution after cost of goods, payment fees and taxes; not a cash receipt schedule.',
+ monthlyGrossProfit:'Monthly contribution',cumulativeGrossProfit:'Cumulative contribution',ltv3:'Contribution / customer, 3M',ltv6:'Contribution / customer, 6M',ltv12:'Contribution / customer, 12M',
+ weakestStage:'Largest loss by volume',noScaleLimit:'No upper ceiling in this model',noProfitableScale:'No break-even budget above the current one',
+ withinTarget:'Result cost is within target',aboveTarget:'Result cost is above target',atBreakEven:'Model is at break-even',
+ noRevenueValue:'No result value is provided: acquisition cost is measurable; profit and ROI are unknown.',
+ noPaidResults:'There are no paid results. Costs remain; CPA is undefined.',
+ noUnitMargin:'Contribution per result is zero or negative. Lowering CPC alone cannot make this model profitable.',
+ impossibleCvr:'Required CR exceeds 100%. The funnel alone cannot break even at the current costs, value and margin.',
+ snapshotHint:'Scenarios are snapshots of results when saved. Different currencies are not converted.',
+ currencyHelp:'Currency of entered amounts. Changing it does not convert numbers using exchange rates.',
+ cashAssumption:'Only ad spend, agency and fixed costs for the entered volume are shown. Continuous-buying reserves require daily spend, cost timing and a payout schedule.',
+ cohortAssumption:'Only acquired customers are included, with no new acquisitions; churn starts after month one. Main-model lifetime and cohort churn are separate assumptions. Payback excludes hold delays.',
+ disclaimer:' the forecast depends on entered assumptions. Margin includes cost of goods; payment fees and revenue taxes are deducted from revenue, agency fees from ad spend. LTV is not cash in the bank.'
+});

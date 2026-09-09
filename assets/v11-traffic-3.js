@@ -5,8 +5,8 @@ function invalidFunnelItems(){
 }
 
 renderResults=function(r){
-  const valid=validate(false),brandNoValue=state.vertical==='brand'&&r.unitRevenue<=0,brandTarget=n(state.values.brand?.brandTargetCost),tt=brandNoValue?(r.allInCpa<=brandTarget?'positive':'negative'):tone(r);
-  dom.statusBox.className=`status ${valid?tt:'warning'}`;dom.statusText.textContent=!valid?t('invalid'):tt==='positive'?t('profitable'):tt==='warning'?t('nearLimit'):t('loss');
+  const valid=validate(false),brandNoValue=!r.hasRevenue,brandTarget=n(state.values.brand?.brandTargetCost),tt=brandNoValue?(r.allInCpa<=brandTarget?'positive':'negative'):tone(r);
+  dom.statusBox.className=`status ${valid?tt:'warning'}`;dom.statusText.textContent=!valid?t('invalid'):brandNoValue?t(tt==='positive'?'withinTarget':'aboveTarget'):Math.abs(r.profit)<1e-8?t('atBreakEven'):tt==='positive'?t('profitable'):tt==='warning'?t('nearLimit'):t('loss');
   dom.resultBasis.textContent=VERTICALS[state.vertical].basis?t(state.basis[state.vertical]==='ltv'?'lifetime':state.vertical==='saas'?'firstMonth':'firstOrder'):'—';
   const startLabel=r.mode==='cpc'?t('clicks'):r.startLabel;
   if(!valid){
@@ -26,45 +26,53 @@ renderResults=function(r){
   dom.insightText.textContent=buildInsight(r,tt);renderDashboard(r);renderScaling(r);renderCohort(r);renderScenarios();
 };
 
+function scaleLimitText(value){return value===Infinity?t('noScaleLimit'):value===0?t('noProfitableScale'):money(value)}
+function greatestDrop(r){let index=-1,drop=0;r.funnel.forEach((s,i)=>{if(i>0&&s.drop>drop){index=i;drop=s.drop}});return index}
 buildInsight=function(r,tt){
-  if(r.startCount<=0||r.rawFinal<=0)return t('invalid');
-  if(state.vertical==='brand'&&r.unitRevenue<=0){const target=n(state.values.brand.brandTargetCost);return r.allInCpa<=target?L(`Фактична ціна результату ${money(r.allInCpa)} нижча за ціль ${money(target)}.`,`Actual result cost ${money(r.allInCpa)} is below the target ${money(target)}.`):L(`Фактична ціна результату ${money(r.allInCpa)} вища за ціль ${money(target)} на ${pct((r.allInCpa/target-1)*100)}.`,`Actual result cost ${money(r.allInCpa)} is above the target ${money(target)} by ${pct((r.allInCpa/target-1)*100)}.`)}
-  if(tt==='positive')return r.mode==='stage'?I18N[state.lang].knownStageCostHealthy.replace('{stage}',r.startLabel).replace('{gap}',pct((r.maxTrafficCost/r.trafficCost-1)*100)):L(`Поточний CPA має запас ${pct((r.maxCpa/r.cpa-1)*100)} до межі беззбитковості.`,`Current CPA has ${pct((r.maxCpa/r.cpa-1)*100)} headroom before break-even.`);
-  if(tt==='warning'&&r.profit>=0)return L('Кампанія в плюсі, але запас малий: невелике зростання вартості залучення або просідання CR може з’їсти прибуток.','The campaign is profitable, but the buffer is thin: a small increase in acquisition cost or decline in conversion can erase profit.');
-  return L(`Для виходу в нуль потрібен CPA не вище ${money(r.maxCpa)} або CR від стартового етапу не нижче ${pct(r.requiredCvr)}.`,`To break even, CPA must be no higher than ${money(r.maxCpa)} or conversion from the starting stage must reach at least ${pct(r.requiredCvr)}.`);
+ if(!r.hasRevenue)return t('noRevenueValue');
+ if(r.unitContribution<=0)return t('noUnitMargin');
+ if(r.paidFinal===0)return t('noPaidResults');
+ if(r.requiredCvr>100&&r.profit<0)return t('impossibleCvr');
+ if(Math.abs(r.profit)<1e-8)return t('atBreakEven');
+ if(r.profit>0)return L(`Ціна стартового результату має запас ${pct((r.maxTrafficCost/r.trafficCost-1)*100)} до беззбитковості за незмінного бюджету й CR.`,`Starting-result cost has ${pct((r.maxTrafficCost/r.trafficCost-1)*100)} headroom before break-even at unchanged budget and CR.`);
+ return L(`Для виходу в нуль потрібна ціна стартового результату не вище ${money(r.maxTrafficCost)} або загальна CR не нижче ${pct(r.requiredCvr)}.`,`Break-even requires a starting-result cost of ${money(r.maxTrafficCost)} or less, or an overall CR of at least ${pct(r.requiredCvr)}.`);
 };
 
 renderDashboard=function(r){
   dom.dashboardFunnel.innerHTML=r.funnel.map((s,i)=>`<div class="dashboard-stage"><strong>${esc(s.label)}</strong><span>${count(s.value)}</span><small>${i?`${pct(s.rate*100)} · -${count(s.drop)}`:'100%'}</small></div>`).join('');
-  let weakest={i:0,drop:-1};r.funnel.slice(1).forEach((s,i)=>{if(s.drop>weakest.drop)weakest={i:i+1,drop:s.drop}});
+  const weakest={i:greatestDrop(r)};
   dom.dashboardStats.innerHTML=[compare(t('weakestStage'),r.funnel[weakest.i]?.label||'—'),compare(t('conversionFromStart'),pct(r.overallCvr)),compare(t('costPerFinal'),money(r.allInCpa)),compare(t('approveRate'),pct(r.approve*100))].join('');
   const recs=buildRecommendations(r,weakest.i);dom.recommendations.innerHTML=recs.map(x=>`<div class="recommendation ${x.tone||''}">${esc(x.text)}</div>`).join('');
 };
 
 buildRecommendations=function(r,weakIndex){
-  const recs=[],vals=state.values[state.vertical],weak=r.funnel[weakIndex];
-  if(r.mode==='stage')recs.push({tone:'info',text:t('stageCostModeNote')});
-  if(weakIndex>0)recs.push({tone:'warning',text:L(`Найбільша абсолютна втрата — на етапі «${weak.label}»: відсіюється ${count(weak.drop)} користувачів, проходить ${pct(weak.rate*100)}. ${stageAdvice(weak.label)}`,`The largest absolute loss is at “${weak.label}”: ${count(weak.drop)} users drop off and ${pct(weak.rate*100)} continue. ${stageAdvice(weak.label)}`)});
-  if(r.mode==='cpc'&&Number.isFinite(r.maxCpc)&&r.cpc>r.maxCpc)recs.push({tone:'negative',text:L(`CPC ${money(r.cpc)} вищий за беззбитковий ${money(r.maxCpc)}. Знизь його приблизно на ${pct((1-r.maxCpc/r.cpc)*100)} або підніми цінність фінальної конверсії.`,`CPC ${money(r.cpc)} is above the break-even ${money(r.maxCpc)}. Reduce it by about ${pct((1-r.maxCpc/r.cpc)*100)} or increase final-conversion value.`)});
-  if(r.mode==='stage'&&Number.isFinite(r.maxTrafficCost)){
-    const gap=Math.abs((r.trafficCost/r.maxTrafficCost-1)*100),key=r.trafficCost>r.maxTrafficCost?'knownStageCostProblem':'knownStageCostHealthy';
-    recs.push({tone:r.trafficCost>r.maxTrafficCost?'negative':'positive',text:I18N[state.lang][key].replace('{stage}',r.startLabel).replace('{current}',money(r.trafficCost)).replace('{limit}',money(r.maxTrafficCost)).replace('{gap}',pct(gap))});
-  }
-  if(Number.isFinite(r.requiredCvr)&&r.requiredCvr>r.overallCvr)recs.push({tone:'negative',text:L(`Від «${r.startLabel}» до фіналу зараз доходить ${pct(r.overallCvr)}, а для нуля потрібно ${pct(r.requiredCvr)} — у ${((r.requiredCvr/r.overallCvr)||0).toFixed(2)}× більше. Не оптимізуй усе одразу: порахуй, який один downstream-етап здатен дати цей приріст без нереалістичного стрибка.`,`From “${r.startLabel}” to the final result, conversion is ${pct(r.overallCvr)}; break-even needs ${pct(r.requiredCvr)}, a ${((r.requiredCvr/r.overallCvr)||0).toFixed(2)}× lift. Do not optimize everything at once: identify the one downstream stage that can realistically create most of that gain.`)});
-  if(r.approve<.85)recs.push({tone:'negative',text:L(`Approve лише ${pct(r.approve*100)}. Порівнюй зв’язки за approved CPA: CPL без апруву маскує неякісний трафік. Розбий approve за креативом, GEO, паблішером і причиною відхилення.`,`Approve is only ${pct(r.approve*100)}. Compare combinations by approved CPA: CPL without approve hides weak traffic. Break approve down by creative, GEO, publisher, and rejection reason.`)});
-  if(r.refund>.08)recs.push({tone:'warning',text:L(`Refund / chargeback — ${pct(r.refund*100)}. Відокрем джерела, що продають через завищене очікування, від проблем продукту чи платежу. Оптимізація за дохідністю до refund тут бреше.`,`Refund / chargeback is ${pct(r.refund*100)}. Separate sources that sell through inflated expectations from product or payment issues. Pre-refund profitability is misleading here.`)});
-  const feeShare=r.grossRevenue>0?r.fees/r.grossRevenue*100:0;if(feeShare>15)recs.push({tone:'warning',text:L(`Комісії, податки та fee забирають ${pct(feeShare)} виручки. Дивись contribution після цих витрат, а не лише payout або ROAS.`,`Fees and taxes consume ${pct(feeShare)} of revenue. Judge contribution after these costs, not only payout or ROAS.`)});
-  if(r.holdDays>=14)recs.push({tone:'warning',text:L(`Холд ${r.holdDays} днів заморожує близько ${money(r.heldAmount)}. Для безперервного заливу потрібен cash buffer щонайменше ${money(r.cashGap)} на один цикл.`,`A ${r.holdDays}-day hold delays about ${money(r.heldAmount)}. Continuous buying needs at least ${money(r.cashGap)} of cash buffer for one cycle.`)});
-  if(state.scalingEnabled&&r.scaled){const roiDrop=r.roi-r.scaled.roi;if(r.scaled.profit<0)recs.push({tone:'negative',text:L(`Після масштабування модель іде в мінус: вартість «${r.startLabel}» зростає до ${money(r.scaled.trafficCost)}, а CR від старту падає до ${pct(r.scaled.overallCvr)}. Орієнтовна межа плюсового бюджету — ${money(r.maxScaleBudget)}.`,`After scaling, the model turns negative: “${r.startLabel}” rises to ${money(r.scaled.trafficCost)} and conversion from start falls to ${pct(r.scaled.overallCvr)}. Estimated profitable budget ceiling: ${money(r.maxScaleBudget)}.`)});else if(roiDrop>10)recs.push({tone:'warning',text:L(`Масштабування лишається плюсовим, але ROI падає на ${pct(roiDrop)}. Збільшуй бюджет кроками й після кожного кроку звіряй фактичну ціну стартового етапу та downstream CR.`,`Scaling remains profitable, but ROI drops by ${pct(roiDrop)}. Increase budget in steps and verify the actual starting-stage cost and downstream conversion after each step.`)})}
-  if(r.cohort){if(r.cohort.payback===null)recs.push({tone:'negative',text:L(`Когорта не повертає витрати за ${r.cohort.months} міс. CAC не підтримується доходом, маржею та churn.`,`The cohort does not recover acquisition cost within ${r.cohort.months} months. CAC is not supported by revenue, margin, and churn.`)});else if(r.cohort.payback>6)recs.push({tone:'warning',text:L(`Payback — ${r.cohort.payback} міс. Перевір ранній churn: саме перші 1–2 місяці найбільше ламають LTV.`,`Payback is ${r.cohort.payback} months. Check early churn: months 1–2 damage LTV the most.`)})}
-  if(state.vertical==='brand'){const target=n(vals.brandTargetCost),active=clamp(n(vals.activeRate),0,100);if(target>0&&r.allInCpa>target)recs.push({tone:'negative',text:L(`All-in ціна результату ${money(r.allInCpa)} вища за ціль ${money(target)}. Розділи перехід і підписку, щоб зрозуміти: проблема в закупці чи в упаковці профілю/каналу.`,`All-in result cost ${money(r.allInCpa)} is above the ${money(target)} target. Separate visit and follow conversion to identify whether the issue is acquisition or destination packaging.`)});if(active>0&&active<60)recs.push({tone:'warning',text:L(`Через 30 днів активними лишається ${pct(active)} аудиторії. Дивись не лише CPF, а ціну активного користувача та відписки за джерелами.`,`Only ${pct(active)} of the audience remains active after 30 days. Track cost per active user and unfollows by source, not only CPF.`)})}
-  return recs.slice(0,7);
+ const recs=[],weak=r.funnel[weakIndex];
+ const add=(tone,text)=>recs.push({tone,text});
+ if(r.mode==='stage')add('info',t('stageCostModeNote'));
+ if(!r.hasRevenue)add('info',t('noRevenueValue'));
+ else if(r.unitContribution<=0)add('negative',t('noUnitMargin'));
+ else if(r.paidFinal===0)add('negative',t('noPaidResults'));
+ else if(r.requiredCvr>100&&r.profit<0)add('negative',t('impossibleCvr'));
+ else if(r.profit<0)add('negative',buildInsight(r,'negative'));
+ if(state.scalingEnabled&&r.scaled&&r.hasRevenue){
+  add(r.scaled.profit<0?'negative':'info',L(`При бюджеті ${money(r.scaled.spend)} прибуток моделі — ${money(r.scaled.profit)}, ROI — ${pct(r.scaled.roi)}. Межа: ${scaleLimitText(r.maxScaleBudget)}.`,`At a budget of ${money(r.scaled.spend)}, model profit is ${money(r.scaled.profit)} and ROI is ${pct(r.scaled.roi)}. Ceiling: ${scaleLimitText(r.maxScaleBudget)}.`));
+ }
+ if(weakIndex>0&&weak?.drop>0)add('info',L(`Найбільша втрата за кількістю — «${weak.label}»: ${count(weak.drop)}, CR ${pct(weak.rate*100)}. Це не доводить, що етап найгірший: порівняй його з власною історією та цінністю фінального результату. ${stageAdvice(weak.label)}`,`Largest loss by volume: “${weak.label}”, ${count(weak.drop)} lost, CR ${pct(weak.rate*100)}. This does not prove it is the worst stage: compare with your history and final-result value. ${stageAdvice(weak.label)}`));
+ if(r.approve<1||r.refund>0)add('info',L(`Після approve ${pct(r.approve*100)} і refund ${pct(r.refund*100)} лишається ${count(r.paidFinal)} результатів. Комісії та податки рахуються від виручки після цих коригувань.`,`After ${pct(r.approve*100)} approval and ${pct(r.refund*100)} refunds, ${count(r.paidFinal)} results remain. Fees and taxes use revenue after these adjustments.`));
+ if(r.holdDays>0)add('info',t('cashAssumption'));
+ if(r.cohort)add('info',t('cohortAssumption'));
+ if(state.vertical==='brand'){
+  const target=n(state.values.brand.brandTargetCost);
+  if(target>0&&Number.isFinite(r.allInCpa))add(r.allInCpa>target?'negative':'positive',L(`All-in ціна результату: ${money(r.allInCpa)}. Ціль: ${money(target)}.`,`All-in result cost: ${money(r.allInCpa)}. Target: ${money(target)}.`));
+  if(r.activeAudience===0)add('warning',L('Активна аудиторія дорівнює нулю. Ціна активного користувача не визначена.','Active audience is zero. Cost per active user is undefined.'));
+ }
+ return recs;
 };
 
 renderScaling=function(r){
   dom.scaleSection.hidden=!(state.scalingEnabled&&r.scaled);if(dom.scaleSection.hidden)return;
   const s=r.scaled,label=activeTrafficLabel(r);
-  dom.scaleSummary.innerHTML=[compare(t('budget'),`${money(r.spend)} → ${money(s.spend)}`),compare(`${t('scaledTrafficCost')}: ${label}`,`${money(r.trafficCost)} → ${money(s.trafficCost)}`),compare(t('conversionFromStart'),`${pct(r.overallCvr)} → ${pct(s.overallCvr)}`),compare(t('profit'),`${money(r.profit)} → ${money(s.profit)}`),compare(t('maxScaleBudget'),money(r.maxScaleBudget))].join('');
-  dom.scaleDelta.textContent=`${t('scaleDoublings')}: ${s.doublings.toFixed(2)}. ROI: ${pct(r.roi)} → ${pct(s.roi)}. CPA: ${money(r.allInCpa)} → ${money(s.allInCpa)}.`;
+  dom.scaleSummary.innerHTML=[compare(t('budget'),`${money(r.spend)} → ${money(s.spend)}`),compare(`${t('scaledTrafficCost')}: ${label}`,`${money(r.trafficCost)} → ${money(s.trafficCost)}`),compare(t('conversionFromStart'),`${pct(r.overallCvr)} → ${pct(s.overallCvr)}`),...(r.hasRevenue?[compare(t('profit'),`${money(r.profit)} → ${money(s.profit)}`),compare(t('maxScaleBudget'),scaleLimitText(r.maxScaleBudget))]:[compare(t('allInCpa'),`${money(r.allInCpa)} → ${money(s.allInCpa)}`),compare(t('paidFinal'),`${count(r.paidFinal)} → ${count(s.paidFinal)}`)])].join('');
+  dom.scaleDelta.textContent=`${t('scaleDoublings')}: ${s.doublings.toFixed(2)}. ${r.hasRevenue?`ROI: ${pct(r.roi)} → ${pct(s.roi)}. `:''}All-in CPA: ${money(r.allInCpa)} → ${money(s.allInCpa)}.`;
 };
 
